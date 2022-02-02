@@ -3,6 +3,8 @@ from collections import deque
 
 from utils import *
 
+from topmap import *
+
 
 class Problem:
     """The abstract class for a formal problem. You should subclass
@@ -22,13 +24,19 @@ class Problem:
         state. The result would typically be a list, but if there are
         many actions, consider yielding them one at a time in an
         iterator, rather than building them all at once."""
-        raise NotImplementedError
+        N = G[state]
+        L = []
+        for K in N.keys():
+            L.append("goto " + str(K))
+        return L
+        #raise NotImplementedError
 
     def result(self, state, action):
         """Return the state that results from executing the given
         action in the given state. The action must be one of
         self.actions(state)."""
-        raise NotImplementedError
+        return int(action[5:])
+        #raise NotImplementedError
 
     def goal_test(self, state):
         """Return True if the state is a goal. The default method compares the
@@ -46,7 +54,11 @@ class Problem:
         is such that the path doesn't matter, this function will only look at
         state2. If the path does matter, it will consider c and maybe state1
         and action. The default method costs 1 for every step in the path."""
-        return c + 1
+        print(G[state1])
+        print(state1)
+        print(state2)
+        print(G[state1].keys())
+        return c + G[state1][state2]
 
     def value(self, state):
         """For optimization problems, each state has a value. Hill Climbing
@@ -152,3 +164,13 @@ def best_first_graph_search(problem, f, display=True):
                     del frontier[child]
                     frontier.append(child)
     return None
+
+P = Problem(0, 10)
+A = P.actions(0)
+print(A)
+R = P.result(0, A[0]);
+print(R)
+C = P.path_cost(0,0, A[0], R)
+print(C)
+
+BFGS = best_first_graph_search(P, None)
