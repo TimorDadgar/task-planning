@@ -5,6 +5,8 @@ from utils import *
 
 from topmap import *
 
+from math import *
+
 
 class Problem:
     """The abstract class for a formal problem. You should subclass
@@ -54,10 +56,6 @@ class Problem:
         is such that the path doesn't matter, this function will only look at
         state2. If the path does matter, it will consider c and maybe state1
         and action. The default method costs 1 for every step in the path."""
-        print(G[state1])
-        print(state1)
-        print(state2)
-        print(G[state1].keys())
         return c + G[state1][state2]
 
     def value(self, state):
@@ -170,7 +168,11 @@ A = P.actions(0)
 print(A)
 R = P.result(0, A[0]);
 print(R)
-C = P.path_cost(0,0, A[0], R)
+C = P.path_cost(0,0, A[0], 10)
 print(C)
 
-BFGS = best_first_graph_search(P, None)
+BFGS = best_first_graph_search(P, lambda n: n.path_cost + sqrt((T.nodes[n.state][0]-T.nodes[10][0])**2 + (T.nodes[n.state][1]-T.nodes[10][1])**2))
+print(BFGS.path())
+for n in BFGS.path():
+    print(n.path_cost)
+    print(sqrt((T.nodes[n.state][0]-T.nodes[10][0])**2 + (T.nodes[n.state][1]-T.nodes[10][1])**2))
