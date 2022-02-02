@@ -1,5 +1,7 @@
 from random import *
 
+from math import *
+
 class top_map:
     def __init__(self):
         self.nodes = [];
@@ -17,7 +19,7 @@ class top_map:
             G[i] = dict()
             for j in range(len(N)):
                 if i != j:
-                    G[i][j] = (N[i][0]-N[j][0])**2 + (N[i][1]-N[j][1])**2
+                    G[i][j] = sqrt((N[i][0]-N[j][0])**2 + (N[i][1]-N[j][1])**2)
                     #print(G[i][j])
         return G
         
