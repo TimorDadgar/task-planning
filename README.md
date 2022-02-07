@@ -1,1 +1,1 @@
-Instal pakages: numpy, networx, matplotlib
+Instal pakages: numpy, networkx, matplotlib
