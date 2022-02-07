@@ -5,7 +5,6 @@ class State():
         self.__name__ = name
         self.pos = {}
         self.carrying = None
-        self.pictureTaken = {}
 
 #Operators
 class goto(state, p):
@@ -20,10 +19,6 @@ class drop(state):
     state.carrying = None
     return state
 
-class capture(state, pos):
-    state.pictureTaken |= {pos}
-    return state
-
 #Methods
 class move_robot(state,l1,l2):
     if(state.pos['r'] == l1):
@@ -32,13 +27,13 @@ class move_robot(state,l1,l2):
         return False
 
 class pickup_item(state,loc,i):
-    if(state.carrying == None && state.pos['r'] == loc):
+    if(state.carrying == None and state.pos['r'] == loc):
         return [('pickup'), i]
     else:
         return False
 
 class drop_item(state,loc,i):
-    if(state.carrying == i && state.pos['r'] == loc):
+    if(state.carrying == i and state.pos['r'] == loc):
         return [('drop'), i]
     else:
         return False
@@ -60,6 +55,6 @@ class search(problem, heuristic):
 
 
 #declaration of problem and heuristic
-problem = ....
-heuristic = ....
+problem = #intial state, goal state, actions
+heuristic = #calculation of the heuristic function
 plan = search(problem,heuristic)
