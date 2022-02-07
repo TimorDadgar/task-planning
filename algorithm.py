@@ -148,7 +148,9 @@ def best_first_graph_search(problem, f, display=True):
     frontier.append(node)
     explored = set()
     while frontier:
+        n= node;
         node = frontier.pop()
+        K.add_edge(node.state, n.state)
         if problem.goal_test(node.state):
             if display:
                 print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
@@ -157,11 +159,13 @@ def best_first_graph_search(problem, f, display=True):
         for child in node.expand(problem):
             if child.state not in explored and child not in frontier:
                 frontier.append(child)
+                K.add_edge(child.state, child.state)
             elif child in frontier:
                 if f(child) < frontier[child]:
                     del frontier[child]
                     frontier.append(child)
     return None
+
 
 P = Problem(0, 10)
 A = P.actions(0)
@@ -171,8 +175,18 @@ print(R)
 C = P.path_cost(0,0, A[0], 10)
 print(C)
 
+# pops the strait node between initial node and goal node.
+G[0].pop(10)
+
 BFGS = best_first_graph_search(P, lambda n: n.path_cost + sqrt((T.nodes[n.state][0]-T.nodes[10][0])**2 + (T.nodes[n.state][1]-T.nodes[10][1])**2))
 print(BFGS.path())
 for n in BFGS.path():
     print(n.path_cost)
     print(sqrt((T.nodes[n.state][0]-T.nodes[10][0])**2 + (T.nodes[n.state][1]-T.nodes[10][1])**2))
+
+# i= index, T.nodes coordinate on each node
+pos = {i:T.nodes[i] for i in range(len(T.nodes))}
+
+# drawing in random layout
+nx.draw(K, pos= pos, with_labels=True)
+plt.savefig("filename3.png")

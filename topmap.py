@@ -22,8 +22,15 @@ class top_map:
                     G[i][j] = sqrt((N[i][0]-N[j][0])**2 + (N[i][1]-N[j][1])**2)
                     #print(G[i][j])
         return G
-        
 
 T = top_map()
 T.generate_random(20,0,256)
 G = T.to_graph()
+
+# ____for drawing the graph.____
+# importing networkx
+import networkx as nx
+# importing matplotlib.pyplot
+import matplotlib.pyplot as plt
+
+K = nx.Graph()
