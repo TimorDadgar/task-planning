@@ -2,12 +2,20 @@ from random import *
 
 from math import *
 
+# ____for drawing the graph.____
+import networkx as nx
+import matplotlib.pyplot as plt
+
 class top_map:
     def __init__(self):
         self.nodes = [];
+        self.sensors =[];
         
-    def generate_random(self, n_nodes, minxy, maxxy):
+    def generate_random(self, n_nodes, minxy, maxxy, n_sensors):
         self.nodes = []
+        self.sensors = []
+        for i in range(n_sensors):
+            self.sensors.append(randint(0, n_nodes))
         for i in range(n_nodes):
             self.nodes.append( (uniform(minxy, maxxy), uniform(minxy,maxxy) ))
             #print(self.nodes[i])
@@ -23,14 +31,9 @@ class top_map:
                     #print(G[i][j])
         return G
 
-T = top_map()
-T.generate_random(20,0,256)
-G = T.to_graph()
 
-# ____for drawing the graph.____
-# importing networkx
-import networkx as nx
-# importing matplotlib.pyplot
-import matplotlib.pyplot as plt
+T = top_map()
+T.generate_random(20, 0, 256, 4)   # (number of nodes, min_xy, max_xy, number of sensors)
+G = T.to_graph()
 
 K = nx.Graph()

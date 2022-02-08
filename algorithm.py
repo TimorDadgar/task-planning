@@ -165,28 +165,3 @@ def best_first_graph_search(problem, f, display=True):
                     del frontier[child]
                     frontier.append(child)
     return None
-
-
-P = Problem(0, 10)
-A = P.actions(0)
-print(A)
-R = P.result(0, A[0]);
-print(R)
-C = P.path_cost(0,0, A[0], 10)
-print(C)
-
-# pops the strait node between initial node and goal node.
-G[0].pop(10)
-
-BFGS = best_first_graph_search(P, lambda n: n.path_cost + sqrt((T.nodes[n.state][0]-T.nodes[10][0])**2 + (T.nodes[n.state][1]-T.nodes[10][1])**2))
-print(BFGS.path())
-for n in BFGS.path():
-    print(n.path_cost)
-    print(sqrt((T.nodes[n.state][0]-T.nodes[10][0])**2 + (T.nodes[n.state][1]-T.nodes[10][1])**2))
-
-# i= index, T.nodes coordinate on each node
-pos = {i:T.nodes[i] for i in range(len(T.nodes))}
-
-# drawing in random layout
-nx.draw(K, pos= pos, with_labels=True)
-plt.savefig("filename3.png")
