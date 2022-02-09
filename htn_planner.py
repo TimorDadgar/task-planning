@@ -72,17 +72,31 @@ def search(problem, heuristic):
 
 # converts graph path to strips.
 def convert(plan):
-    print(plan)
-    state1 = State()
     state1.pos = {'r': plan[0].state}
+    print(plan)
     # print(T.nodes[plan[0].state]) # print coordinates instead of node name.
     list = []  # for appending command.
     for i in range(1, len(plan)):
         command = move_robot(state1, plan[i - 1].state, plan[i].state)
         list.append(command)
-        state1.pos = {'r': plan[i].state}
+        goto(state1, plan[i].state)
     return list
 
+def test_of_applying_sensors(l):
+    loc = l[len(l)-1][0][1]
+    sensor = 'camera1'
+    if(loc in T.sensors):
+        command = pickup_item(state1, loc, sensor)
+        l.append(command)
+        pickup(state1, sensor)
+        command2 = take_picture(state1,loc,sensor)
+        l.append(command2)
+        command3 = drop_item(state1,loc,sensor)
+        l.append(command3)
+        drop(state1)
+
+
+state1 = State()
 
 initial_state = randint(0, 19)
 goal_state = randint(0, 19)
@@ -104,6 +118,11 @@ plan = search(f_p, d_h)
 print(plan)
 
 l = convert(plan.path())
+print(l)
+
+print("nodes with sensors: ", T.sensors)
+
+test_of_applying_sensors(l)
 print(l)
 
 
