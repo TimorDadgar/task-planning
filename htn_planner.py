@@ -27,12 +27,21 @@ def drop(state, i):
 def move_robot(state, l1, l2):
     if l1 == l2:
         return []
-    if state.pos['r'] == l1:
-        goto(state, l2)
-        # K.add_edge(l1, l2)
-        return [('goto', l2)]
-    else:
+    if state.pos['r'] != l1:
         return False
+    problem = Problem(l1, l2)
+    heuristic = (lambda n: n.path_cost + sqrt(
+        (T.nodes[n.state][0] - T.nodes[l2][0]) ** 2 + (T.nodes[n.state][1] - T.nodes[l2][1]) ** 2))
+    path = best_first_graph_search(problem, heuristic)
+    if path is None:
+        return None
+    path = path.path()
+    # print(T.nodes[plan[0].state]) # print coordinates instead of node name.
+    plan = []  # for appending command.
+    for i in range(1, len(path)):
+        plan.append(('goto', path[i].state))
+        goto(state, path[i].state)
+    return plan
 
 
 def pickup_item(state, loc, i):
@@ -145,13 +154,15 @@ def distn(i, j):
     N = T.nodes
     return sqrt((N[i][0] - N[j][0]) ** 2 + (N[i][1] - N[j][1]) ** 2)
 
+import copy
 
 def dotodo(state, todo):
-    loc = state.pos['r']
+    pos = copy.copy(state.pos)
     plans = []
     for t in todo:
-        p = t[0](state)
+        p = t(state)
         plans.append(p)
+        state.pos = copy.copy(pos)
     plan = []
     while len(plans):
         mind = float(inf)
@@ -159,24 +170,54 @@ def dotodo(state, todo):
         for i in range(len(plans)):
             p = plans[i]
             d = 0
-            if p[0][0] == 'goto':
-                d = distn(loc, p[0][1])
+            j = 0
+            olp = state.pos['r']
+            while j < len(p) and p[j][0] == 'goto':
+                d += distn(olp, p[j][1])
+                olp = p[j][1]
+                j += 1
             if d < mind:
                 mind = d
                 mini = i
 
+        print(plans)
         plan.append(plans[mini].pop(0))
-        if plan[-1][0] == 'goto':
-            K.add_edge(loc, plan[-1][1])
-            loc = plan[-1][1]
+        while plan[-1][0] == 'goto':
+            K.add_edge(state.pos['r'], plan[-1][1], color='black', weight=3)
+            state.pos['r'] = plan[-1][1]
+            plan.append(plans[mini].pop(0))
+        if plan[-1][0] == 'drop':
+            state.pos['s' + str(plan[-1][1])] = state.pos['r']
         if len(plans[mini]) == 0:
             plans.pop(mini)
+        else:
+            while plans[mini][0][0] != 'goto':
+                plan.append(plans[mini].pop(0))
+                if plan[-1][0] == 'drop':
+                    state.pos['s'+str(plan[-1][1])] = state.pos['r']
+                if len(plans[mini]) == 0:
+                    plans.pop(mini)
+                    break
+        print(plans)
+        for i in range(len(plans)):
+            pos = state.pos['r']
+            while plans[i][0][0] == 'goto':
+                op = plans[i].pop(0)
+                pos = op[1]
+            olp = state.pos['r']
+            mov = move_robot(state, state.pos['r'], pos)
+            mov.reverse()
+            for m in mov:
+                plans[i].insert(0, m)
+            state.pos['r'] = olp
+        print(plans)
     return plan
 
 
 state1 = State()
 
-state1.pos['r'] = randint(0, 19)
+state1.pos['r'] = startp = randint(0, 19)
+
 for i in range(len(T.sensors)):
     state1.pos['s' + str(i)] = T.sensors[i]
 print(state1.pos)
@@ -184,9 +225,9 @@ goal1 = randint(0, 19)
 goal2 = randint(0, 19)
 goal3 = randint(0, 19)
 goal4 = randint(0, 19)
-todo = [(lambda state: drop_item(state, goal1, 0), goal1), (lambda state: drop_item(state, goal2, 1), goal2),
-        (lambda state: drop_item(state, goal3, 2), goal3), (lambda state: drop_item(state, goal4, 3), goal4)]
-print(dotodo(state1, todo))
+todo = [lambda state: drop_item(state, goal1, 0), lambda state: drop_item(state, goal2, 1),
+        lambda state: drop_item(state, goal3, 2), lambda state: drop_item(state, goal4, 3)]
+
 
 for i in range(len(T.nodes)):
     K.add_edge(i, i)
@@ -195,10 +236,20 @@ for i in range(len(T.nodes)):
 pos = {i: T.nodes[i] for i in range(len(T.nodes))}
 
 col = ['green' if node in T.sensors else 'yellow' for node in K]
+col[startp] = 'cyan'
+plan = dotodo(state1, todo)
+print(plan)
 
+
+for k in state1.pos.keys():
+    if k[0] == 's':
+        col[state1.pos[k]] = 'violet'
+
+col[plan[-2][1]] = 'red'
 
 # drawing in random layout
-nx.draw(K, pos=pos, with_labels=True, node_color=col)
+nx.draw(K, pos=pos, with_labels=True, node_color=col, edge_color=nx.get_edge_attributes(K, 'color').values(),
+        width=list(nx.get_edge_attributes(K, 'weight').values()))
 plt.show()
 plt.savefig("filename3.png")
 
