@@ -13,42 +13,43 @@ def goto(state, p):
     return state
 
 
-def pickup(state,i):
-    state.carrying = i
+def pickup(state, i):
+    state.carrying = state.carrying | {i}
     return state
 
 
-def drop(state):
-    state.carrying = None
+def drop(state, i):
+    state.carrying -= {i}
     return state
 
 
 # Methods
-def move_robot(state,l1,l2):
-    if(state.pos['r'] == l1):
-        state.pos['r'] = l2
-        K.add_edge(l1, l2)
+def move_robot(state, l1, l2):
+    if l1 == l2:
+        return []
+    if state.pos['r'] == l1:
+        goto(state, l2)
+        # K.add_edge(l1, l2)
         return [('goto', l2)]
     else:
         return False
 
 
-def pickup_item(state,loc,i):
+def pickup_item(state, loc, i):
     s = []
-    if(state.pos['r'] != loc):
+    if state.pos['r'] != loc:
         s = move_robot(state, state.pos['r'], loc)
-    state.carrying = state.carrying | {i}
+    pickup(state, i)
     s.append(('pickup', i))
     return s
 
 
-
 def drop_item(state, loc, i):
     if i in state.carrying:
-        if state.pos['r'] == loc:
-            state.carrying -= {i}
-            return [('drop', i)]
-        s = move_robot(state, state.pos['r'], loc)
+        s = []
+        if state.pos['r'] != loc:
+            s = move_robot(state, state.pos['r'], loc)
+        drop(state, i)
         s.append(('drop', i))
         return s
     else:
@@ -138,14 +139,54 @@ print("nodes with sensors: ", T.sensors)
 test_of_applying_sensors(l)
 print(l)
 '''
+
+
+def distn(i, j):
+    N = T.nodes
+    return sqrt((N[i][0] - N[j][0]) ** 2 + (N[i][1] - N[j][1]) ** 2)
+
+
+def dotodo(state, todo):
+    loc = state.pos['r']
+    plans = []
+    for t in todo:
+        p = t[0](state)
+        plans.append(p)
+    plan = []
+    while len(plans):
+        mind = float(inf)
+        mini = 0
+        for i in range(len(plans)):
+            p = plans[i]
+            d = 0
+            if p[0][0] == 'goto':
+                d = distn(loc, p[0][1])
+            if d < mind:
+                mind = d
+                mini = i
+
+        plan.append(plans[mini].pop(0))
+        if plan[-1][0] == 'goto':
+            K.add_edge(loc, plan[-1][1])
+            loc = plan[-1][1]
+        if len(plans[mini]) == 0:
+            plans.pop(mini)
+    return plan
+
+
 state1 = State()
 
 state1.pos['r'] = randint(0, 19)
 for i in range(len(T.sensors)):
     state1.pos['s' + str(i)] = T.sensors[i]
 print(state1.pos)
-goal = randint(0, 19)
-print(drop_item(state1, goal, 0))
+goal1 = randint(0, 19)
+goal2 = randint(0, 19)
+goal3 = randint(0, 19)
+goal4 = randint(0, 19)
+todo = [(lambda state: drop_item(state, goal1, 0), goal1), (lambda state: drop_item(state, goal2, 1), goal2),
+        (lambda state: drop_item(state, goal3, 2), goal3), (lambda state: drop_item(state, goal4, 3), goal4)]
+print(dotodo(state1, todo))
 
 for i in range(len(T.nodes)):
     K.add_edge(i, i)
@@ -156,11 +197,9 @@ pos = {i: T.nodes[i] for i in range(len(T.nodes))}
 col = ['green' if node in T.sensors else 'yellow' for node in K]
 
 
-
 # drawing in random layout
 nx.draw(K, pos=pos, with_labels=True, node_color=col)
 plt.savefig("filename3.png")
-
 
 
 #declaration of problem and heuristic

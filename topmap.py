@@ -15,7 +15,7 @@ class top_map:
         self.nodes = []
         self.sensors = []
         for i in range(n_sensors):
-            self.sensors.append(randint(0, n_nodes))
+            self.sensors.append(randint(0, n_nodes-1))
         for i in range(n_nodes):
             self.nodes.append( (uniform(minxy, maxxy), uniform(minxy,maxxy) ))
             #print(self.nodes[i])
