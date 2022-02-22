@@ -199,6 +199,7 @@ col = ['green' if node in T.sensors else 'yellow' for node in K]
 
 # drawing in random layout
 nx.draw(K, pos=pos, with_labels=True, node_color=col)
+plt.show()
 plt.savefig("filename3.png")
 
 
