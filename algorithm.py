@@ -148,7 +148,7 @@ def best_first_graph_search(problem, f, display=True):
     frontier.append(node)
     explored = set()
     while frontier:
-        n= node;
+        n = node
         node = frontier.pop()
         K.add_edge(node.state, n.state)
         if problem.goal_test(node.state):

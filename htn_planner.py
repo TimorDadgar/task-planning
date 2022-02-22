@@ -4,7 +4,7 @@ from algorithm import *
 class State():
     def __init__(self):
         self.pos = {}
-        self.carrying = None
+        self.carrying = set()
 
 
 # Operators
@@ -26,34 +26,46 @@ def drop(state):
 # Methods
 def move_robot(state,l1,l2):
     if(state.pos['r'] == l1):
+        state.pos['r'] = l2
+        K.add_edge(l1, l2)
         return [('goto', l2)]
     else:
         return False
 
 
 def pickup_item(state,loc,i):
-    if(state.carrying == None and state.pos['r'] == loc):
-        return [('pickup'), i]
+    s = []
+    if(state.pos['r'] != loc):
+        s = move_robot(state, state.pos['r'], loc)
+    state.carrying = state.carrying | {i}
+    s.append(('pickup', i))
+    return s
+
+
+
+def drop_item(state, loc, i):
+    if i in state.carrying:
+        if state.pos['r'] == loc:
+            state.carrying -= {i}
+            return [('drop', i)]
+        s = move_robot(state, state.pos['r'], loc)
+        s.append(('drop', i))
+        return s
     else:
-        return False
+        p = pickup_item(state, state.pos['s'+str(i)], i)
+        p.extend(drop_item(state, loc, i))
+        return p
 
 
-def drop_item(state,loc,i):
-    if(state.carrying == i and state.pos['r'] == loc):
-        return [('drop'), i]
-    else:
-        return False
-
-
-def take_picture(state,loc,c):
-    if(state.pos['r'] == loc):
-        return [('capture'), c]
+def take_picture(state, loc, c):
+    if state.pos['r'] == loc:
+        return [('capture', c)]
     else:
         return False
 
 
 def formulate_problem(initial_st, goal_st):
-    if(initial_st == goal_st):
+    if initial_st == goal_st:
         return False
     else:
         p = Problem(initial_st, goal_st)
@@ -75,27 +87,28 @@ def convert(plan):
     state1.pos = {'r': plan[0].state}
     print(plan)
     # print(T.nodes[plan[0].state]) # print coordinates instead of node name.
-    list = []  # for appending command.
+    li = []  # for appending command.
     for i in range(1, len(plan)):
         command = move_robot(state1, plan[i - 1].state, plan[i].state)
-        list.append(command)
+        li.append(command)
         goto(state1, plan[i].state)
-    return list
+    return li
+
 
 def test_of_applying_sensors(l):
     loc = l[len(l)-1][0][1]
     sensor = 'camera1'
-    if(loc in T.sensors):
+    if loc in T.sensors:
         command = pickup_item(state1, loc, sensor)
         l.append(command)
         pickup(state1, sensor)
-        command2 = take_picture(state1,loc,sensor)
+        command2 = take_picture(state1, loc, sensor)
         l.append(command2)
-        command3 = drop_item(state1,loc,sensor)
+        command3 = drop_item(state1, loc, sensor)
         l.append(command3)
         drop(state1)
 
-
+'''
 state1 = State()
 
 initial_state = randint(0, 19)
@@ -124,14 +137,28 @@ print("nodes with sensors: ", T.sensors)
 
 test_of_applying_sensors(l)
 print(l)
+'''
+state1 = State()
 
+state1.pos['r'] = randint(0, 19)
+for i in range(len(T.sensors)):
+    state1.pos['s' + str(i)] = T.sensors[i]
+print(state1.pos)
+goal = randint(0, 19)
+print(drop_item(state1, goal, 0))
 
+for i in range(len(T.nodes)):
+    K.add_edge(i, i)
 
 # i= index, T.nodes coordinate on each node
-pos = {i:T.nodes[i] for i in range(len(T.nodes))}
+pos = {i: T.nodes[i] for i in range(len(T.nodes))}
+
+col = ['green' if node in T.sensors else 'yellow' for node in K]
+
+
 
 # drawing in random layout
-nx.draw(K, pos= pos, with_labels=True)
+nx.draw(K, pos=pos, with_labels=True, node_color=col)
 plt.savefig("filename3.png")
 
 

@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 class top_map:
     def __init__(self):
-        self.nodes = [];
-        self.sensors =[];
+        self.nodes = []
+        self.sensors = []
         
     def generate_random(self, n_nodes, minxy, maxxy, n_sensors):
         self.nodes = []
