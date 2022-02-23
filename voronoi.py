@@ -25,7 +25,7 @@ def add_nodes(graph, n_l):
         graph.add_node(i, pos=n_l[i])   # add node to graph and assign correct cords to that node
 
 
-def calc_vertex():
+def calc_vertex(tri, vor):
     vertex_n_l = []   # create local list we will return
     for i in range(len(tri.vertices)):
         x = vor.vertices[i][0]      # assign vertices x value to local var x to get more readable code
@@ -41,52 +41,64 @@ def calc_vertex():
     return vertex_n_l     # return local list
 
 
-def calc_xy_max_min():
+def calc_xy_max_min(n_l):
     global x_max_min
     global y_max_min
+    global offset
     x_list = []     # create local list to hold all x values
     y_list = []     # create local list to hold all y values
-    for i in range(len(given_nodes)):   # go through all x,y values and append them to each list
-        x_list.append(given_nodes[i][0])
-        y_list.append(given_nodes[i][1])
+    for i in range(len(n_l)):   # go through all x,y values and append them to each list
+        x_list.append(n_l[i][0])
+        y_list.append(n_l[i][1])
 
     x_max_min = (max(x_list)+offset, min(x_list)-offset)    # set (max, min) values for x
     y_max_min = (max(y_list)+offset, min(y_list)-offset)    # set (max, min) values for y
 
 
-n = 20   # n number of nodes to generate
-min_xy = -5    # minimum range of x,y
-max_xy = 5   # maximum range of x,y
+def get_edges_for_graph(input_nodes, input_max, input_min, input_offset):  # replace n with given_nodes later
+    n = input_nodes   # n number of nodes to generate
+    min_xy = input_min   # minimum range of x,y
+    max_xy = input_max   # maximum range of x,y
+    global offset
+    offset = input_offset      # offset for the accepted voronoi region
+
+    # generates n numbers of random nodes
+    given_nodes = [(random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)) for i in range(n)]
+
+    vor = Voronoi(given_nodes)     # using scipy Voronoi library to create voronoi diagram of given points
+    tri = Delaunay(given_nodes)    # using scipy Delaunay library to triangulate given points
+
+    calc_xy_max_min(given_nodes)    # calculate the (max, min) values for x,y of given nodes
+    vertex_node_n = calc_vertex(tri, vor)     # check which vertices that is in the accepted voronoi region
+    edge_list = create_graph_edges(vertex_node_n)  # create edge list from vertex node neighbor list
+    print(edge_list)
+    """"
+    # create visual graph with help of networkx library
+    G = nx.Graph()      # create networkx graph
+    add_nodes(G, given_nodes)   # add nodes to networkx's graph
+    G.add_edges_from(edge_list)     # add edges not networkx's graph
+
+    # draw graph with nodes and edges
+    nx.draw(G, nx.get_node_attributes(G, 'pos'), font_color='w', edge_color='b', with_labels=True, font_weight='bold')
+
+    # draw voronoi diagram with given nodes
+    fig = voronoi_plot_2d(vor)
+
+    # draw graph with nodes and edges inside the voronoi diagram
+    #nx.draw(G, nx.get_node_attributes(G, 'pos'), font_color='w', edge_color='b', with_labels=True, font_weight='bold')
+
+    # show drawings with the help of matplotlib library
+    plt.show()
+    """
+
+    return edge_list
+
+
 x_max_min = ()   # (max, min) x values of given nodes
 y_max_min = ()    # (max, min) y values of given nodes
-offset = 1      # offset for the accepted voronoi region
+offset = None
 
-# generates n numbers of random nodes
-given_nodes = [(random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)) for i in range(n)]
-
-vor = Voronoi(given_nodes)     # using scipy Voronoi library to create voronoi diagram of given points
-tri = Delaunay(given_nodes)    # using scipy Delaunay library to triangulate given points
-
-calc_xy_max_min()    # calculate the (max, min) values for x,y of given nodes
-vertex_node_n = calc_vertex()     # check which vertices that is in the accepted voronoi region
-
-# create visual graph with help of networkx library
-G = nx.Graph()      # create networkx graph
-edge_list = create_graph_edges(vertex_node_n)     # create edge list from vertex node neighbor list
-add_nodes(G, given_nodes)   # add nodes to networkx's graph
-G.add_edges_from(edge_list)     # add edges not networkx's graph
-
-# draw graph with nodes and edges
-nx.draw(G, nx.get_node_attributes(G, 'pos'), font_color='w', edge_color='b', with_labels=True, font_weight='bold')
-
-# draw voronoi diagram with given nodes
-fig = voronoi_plot_2d(vor)
-
-# draw graph with nodes and edges inside the voronoi diagram
-#nx.draw(G, nx.get_node_attributes(G, 'pos'), font_color='w', edge_color='b', with_labels=True, font_weight='bold')
-
-# show drawings with the help of matplotlib library
-plt.show()
+get_edges_for_graph(10, 5, -5, 1)
 
 # print statements for bug fixing
 """"
