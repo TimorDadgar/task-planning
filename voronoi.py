@@ -3,7 +3,11 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import random
 
-vor = None
+
+x_max_min = ()   # (max, min) x values of given nodes
+y_max_min = ()    # (max, min) y values of given nodes
+offset = 1  # offset for the accepted voronoi region
+
 
 def create_graph_edges(n_n):
     edge_l = []     # create local list we will return
@@ -26,7 +30,7 @@ def add_nodes(graph, n_l):
         graph.add_node(i, pos=n_l[i])   # add node to graph and assign correct cords to that node
 
 
-def calc_vertex(tri):
+def calc_vertex(tri, vor):
     vertex_n_l = []   # create local list we will return
     for i in range(len(tri.vertices)):
         x = vor.vertices[i][0]      # assign vertices x value to local var x to get more readable code
@@ -58,13 +62,11 @@ def calc_xy_max_min(n_l):
 
 def get_edges_for_graph(given_nodes):  # replace n with given_nodes later
 
-    # generates n numbers of random nodes
-    global vor
     vor = Voronoi(given_nodes)  # using scipy Voronoi library to create voronoi diagram of given points
     tri = Delaunay(given_nodes)    # using scipy Delaunay library to triangulate given points
 
     calc_xy_max_min(given_nodes)    # calculate the (max, min) values for x,y of given nodes
-    vertex_node_n = calc_vertex(tri)     # check which vertices that is in the accepted voronoi region
+    vertex_node_n = calc_vertex(tri, vor)     # check which vertices that is in the accepted voronoi region
     edge_list = create_graph_edges(vertex_node_n)  # create edge list from vertex node neighbor list
     print(edge_list)
 
@@ -88,11 +90,6 @@ def visualise_voronoi(given_nodes, edge_list):
 
     # show drawings with the help of matplotlib library
     # plt.show()
-
-
-x_max_min = ()   # (max, min) x values of given nodes
-y_max_min = ()    # (max, min) y values of given nodes
-offset = 1  # offset for the accepted voronoi region
 
 
 
