@@ -61,7 +61,7 @@ def calc_xy_max_min(n_l):
 
 
 def get_edges_for_graph(given_nodes):  # replace n with given_nodes later
-
+    global vor
     vor = Voronoi(given_nodes)  # using scipy Voronoi library to create voronoi diagram of given points
     tri = Delaunay(given_nodes)    # using scipy Delaunay library to triangulate given points
 
@@ -74,6 +74,7 @@ def get_edges_for_graph(given_nodes):  # replace n with given_nodes later
 
 
 def visualise_voronoi(given_nodes, edge_list):
+    global vor
     # create visual graph with help of networkx library
     G = nx.Graph()  # create networkx graph
     add_nodes(G, given_nodes)  # add nodes to networkx's graph
