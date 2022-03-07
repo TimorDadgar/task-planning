@@ -1,10 +1,53 @@
+import traceback
+
 from algorithm import *
 import copy
+
+shadDrainRate = 0.3
+sunChargeRate = 0.0
+
 
 class State():
     def __init__(self):
         self.pos = {}
         self.carrying = set()
+        self.battery = 30
+
+
+def restore_state(onto, refer):
+    onto.pos = copy.copy(refer.pos)
+    onto.carrying = copy.copy(refer.carrying)
+    onto.battery = refer.battery
+
+
+def path_length(l1, l2):
+    problem = Problem(l1, l2)  # the path is a sub-problem handled in algorithm.py
+    heuristic = (lambda n: n.path_cost + sqrt(
+        (T.nodes[n.state][0] - T.nodes[l2][0]) ** 2 + (T.nodes[n.state][1] - T.nodes[l2][1]) ** 2))
+    # distance from explored node to goal
+    path = best_first_graph_search(problem, heuristic, False)
+    if path is None:  # impossible to get there
+        return None
+    path = path.path()  # the path leading up to final node
+    length = 0
+    for i in range(1, len(path)):
+        length += distn(path[i - 1].state, path[i].state)
+    return length
+
+
+def find_sun(pos):
+    outdist = float('inf')
+    batteryOut = 0
+    sunnode = None
+    if pos in T.inshadow:
+        for N in range(len(T.nodes)):
+            if N not in T.inshadow:
+                pl = path_length(pos, N)
+                if pl is not None and pl < outdist:
+                    sunnode = N
+                    outdist = pl
+        batteryOut = outdist * shadDrainRate
+    return batteryOut, sunnode
 
 
 # Operators
@@ -34,14 +77,51 @@ def move_robot(state, l1, l2):
     heuristic = (lambda n: n.path_cost + sqrt(
         (T.nodes[n.state][0] - T.nodes[l2][0]) ** 2 + (T.nodes[n.state][1] - T.nodes[l2][1]) ** 2))
     # distance from explored node to goal
-    path = best_first_graph_search(problem, heuristic)
+    path = best_first_graph_search(problem, heuristic, False)
     if path is None:  # impossible to get there
-        return None
+        raise Exception("Cannot reach node " + str(l2) + " from " + str(l1))
     path = path.path()  # the path leading up to final node
     plan = []  # for appending command.
+    olb = state.battery
+    ols = copy.deepcopy(state)
     for i in range(1, len(path)):
         plan.append(('goto', path[i].state))
         goto(state, path[i].state)
+        if path[i - 1].state in T.inshadow or path[i].state in T.inshadow:
+            state.battery -= distn(path[i - 1].state, path[i].state) * shadDrainRate
+        else:
+            state.battery = min(state.battery + distn(path[i - 1].state, path[i].state) * sunChargeRate, 100)
+    # make sure to never let it be impossible to get out of shadow
+
+    su = find_sun(state.pos['r'])
+    batteryOut = su[0]
+    sunnode = su[1]
+
+    print(olb, state.battery, batteryOut)
+    print(path)
+    if state.battery < batteryOut:
+        if l1 in T.inshadow:
+            restore_state(state, ols)
+            su = find_sun(l1)
+            if state.battery < su[0]:
+                raise Exception("Impossible to get out of shadow at " + str(l1) + " - insufficient battery")
+            plan = move_robot(state, l1, su[1])
+            plan.extend(move_robot(state, su[1], l2))
+        elif olb - state.battery + batteryOut <= 100:  # is it possible to before charge enough to get in and out?
+            plan.insert(0, ('charge', olb - state.battery + batteryOut))
+            # print("charge to", str(olb - state.battery + batteryOut))
+            state.battery = batteryOut
+            # print("end up with", str(batteryOut))
+        else:
+            if batteryOut < 50: # if the shortest distance from goal to sun is short enough
+                restore_state(state, ols)
+                plan = move_robot(state, l1, sunnode)
+                plan.append(('charge', batteryOut*2))
+                state.battery = batteryOut*2
+                plan.extend(move_robot(state, sunnode, l2))
+            else:
+                raise Exception("Going to  " + str(l2) + " from " + str(l1) + " would risk running out of battery")
+
     return plan
 
 
@@ -63,7 +143,7 @@ def drop_item(state, loc, i):
         s.append(('drop', i))
         return s
     else:  # if not having the item
-        p = pickup_item(state, state.pos['s'+str(i)], i)  # get it
+        p = pickup_item(state, state.pos['s' + str(i)], i)  # get it
         p.extend(drop_item(state, loc, i))  # proceed with having it
         return p
 
@@ -78,7 +158,7 @@ def take_picture(state, loc, c):
 
 # not in practical use
 def test_of_applying_sensors(l):
-    loc = l[len(l)-1][0][1]
+    loc = l[len(l) - 1][0][1]
     sensor = 'camera1'
     if loc in T.sensors:
         command = pickup_item(state1, loc, sensor)
@@ -99,13 +179,13 @@ def distn(i, j):
 
 # execute the set of tasks to do
 def dotodo(state, todo):
-    pos = copy.copy(state.pos) # for restoring state
+    ols = copy.deepcopy(state)  # for restoring state
     # plan each subtask separately at first, as if each done from initial condition
     plans = []
     for t in todo:
         p = t(state)
         plans.append(p)
-        state.pos = copy.copy(pos)
+        state = copy.deepcopy(ols)
     plan = []
     # for as long as there are tasks to add to the ultimate single plan
     while len(plans):
@@ -115,7 +195,9 @@ def dotodo(state, todo):
             p = plans[i]
             d = 0  # distance of current plan
             j = 0  # instruction index
-            olp = state.pos['r']  # to restore the position after exploration
+            if p[j][0] == 'charge':
+                j += 1
+            olp = state.pos['r']  # to estimate distance
             while j < len(p) and p[j][0] == 'goto':  # for as long as movement is required
                 d += distn(olp, p[j][1])
                 olp = p[j][1]
@@ -125,6 +207,8 @@ def dotodo(state, todo):
                 mini = i
 
         plan.append(plans[mini].pop(0))  # add the instruction(s) that require the least distance to get something done
+        if plan[-1][0] == 'charge':
+            plan.append(plans[mini].pop(0))
         while plan[-1][0] == 'goto':  # all the movement up until accomplishing something
             K.add_edge(state.pos['r'], plan[-1][1], color='black', weight=3)
             state.pos['r'] = plan[-1][1]
@@ -135,52 +219,55 @@ def dotodo(state, todo):
         if len(plans[mini]) == 0:  # if the subplan is completed, remove it
             plans.pop(mini)
         else:  # the location may contain several things to do at
-            while plans[mini][0][0] != 'goto':
+            while plans[mini][0][0] != 'goto' and plans[mini][0][0] != 'charge':
                 plan.append(plans[mini].pop(0))
                 if plan[-1][0] == 'drop':
-                    state.pos['s'+str(plan[-1][1])] = state.pos['r']
+                    state.pos['s' + str(plan[-1][1])] = state.pos['r']
                 if len(plans[mini]) == 0:
                     plans.pop(mini)
                     break
         # after moving to a new location, new paths are needed to each other location
         for i in range(len(plans)):
             pos = state.pos['r']  # eventually the destination
-            while plans[i][0][0] == 'goto':
+            while plans[i][0][0] == 'goto' or plans[i][0][0] == 'charge':
                 op = plans[i].pop(0)
                 pos = op[1]
-            olp = state.pos['r']
+            ols = copy.deepcopy(state)
             mov = move_robot(state, state.pos['r'], pos)
             mov.reverse()  # inserting each movement at index zero, reversing this order makes it easy
             for m in mov:
                 plans[i].insert(0, m)
-            state.pos['r'] = olp
+            state = ols
+            print(plans)
     return plan
 
 
 state1 = State()
 
-state1.pos['r'] = startp = randint(0, 19)
+state1.pos['r'] = startp = randint(0, len(T.sensors) - 1)
 
 for i in range(len(T.sensors)):
     state1.pos['s' + str(i)] = T.sensors[i]
 print(state1.pos)
 # each sensor's position to be dropped
-goal1 = randint(0, 19)
-goal2 = randint(0, 19)
-goal3 = randint(0, 19)
-goal4 = randint(0, 19)
+goal1 = randint(0, len(T.sensors) - 1)
+goal2 = randint(0, len(T.sensors) - 1)
+goal3 = randint(0, len(T.sensors) - 1)
+goal4 = randint(0, len(T.sensors) - 1)
 todo = [lambda state: drop_item(state, goal1, 0), lambda state: drop_item(state, goal2, 1),
         lambda state: drop_item(state, goal3, 2), lambda state: drop_item(state, goal4, 3)]
-
 
 # the position in graph to draw nodes
 # i= index, T.nodes coordinate on each node
 pos = {i: T.nodes[i] for i in range(len(T.nodes))}
 
-
-plan = dotodo(state1, todo)
-print(plan)
-
+try:
+    plan = dotodo(state1, todo)
+    print(plan)
+except BaseException as e:
+    print(traceback.format_exc())
+    print("Error:", e)
+    plan = None
 
 # if the nodes not part of the plan are to be drawn
 drawall = True
@@ -188,8 +275,7 @@ if drawall:
     for i in range(len(T.nodes)):
         K.add_edge(i, i)
 
-
-col = ['green' if node in T.sensors else 'yellow' for node in K]  # green for pickup place, yellow for nothing special
+col = ['lime' if node in T.sensors else 'yellow' for node in K]  # green for pickup place, yellow for nothing special
 colind = dict()  # color index. This gets a little complicated when not all nodes are drawn
 for i in range(len(T.nodes)):
     j = 0
@@ -204,17 +290,39 @@ for k in state1.pos.keys():
     if k[0] == 's':
         col[colind[state1.pos[k]]] = 'violet'  # drop position color
 
-col[colind[plan[-2][1]]] = 'red'  # end position color
+if plan is not None:
+    col[colind[plan[-2][1]]] = 'red'  # end position color
+from matplotlib import colors
+
+for k in T.inshadow:
+    if k in colind:
+        if colors.is_color_like("dark" + col[colind[k]]):
+            col[colind[k]] = "dark" + col[colind[k]]
+        else:
+            if col[colind[k]] == "lime":
+                col[colind[k]] = "darkgreen"
+            else:
+                col[colind[k]] = "darkgoldenrod"
+        '''
+        c = colors.to_rgb(col[colind[k]])
+        c2 = colors.to_rgb('gray')
+        c = (c[0]/2 + c2[0]/2,
+             c[1] / 2 + c2[1] / 2,
+             c[2] / 2 + c2[2] / 2)
+        col[colind[k]] = c
+        '''
 
 # drawing in random layout
-nx.draw(K, pos=pos, with_labels=True, node_color=col, edge_color=nx.get_edge_attributes(K, 'color').values(),
-        width=list(nx.get_edge_attributes(K, 'weight').values()))
+if plan is not None:
+    nx.draw(K, pos=pos, with_labels=True, node_color=col, edge_color=nx.get_edge_attributes(K, 'color').values(),
+            width=list(nx.get_edge_attributes(K, 'weight').values()))
+else:
+    nx.draw(K, pos=pos, with_labels=True, node_color=col)
 plt.show()
 plt.savefig("filename3.png")
 
-
-#declaration of problem and heuristic
-#problem = #intial state, goal state, actions
-#heuristic = #calculation of the heuristic function
-#plan = search(problem,heuristic)
-#plan = {........}
+# declaration of problem and heuristic
+# problem = #intial state, goal state, actions
+# heuristic = #calculation of the heuristic function
+# plan = search(problem,heuristic)
+# plan = {........}

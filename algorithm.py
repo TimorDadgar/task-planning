@@ -56,6 +56,8 @@ class Problem:
         is such that the path doesn't matter, this function will only look at
         state2. If the path does matter, it will consider c and maybe state1
         and action. The default method costs 1 for every step in the path."""
+        if state2 in T.inshadow:
+            return c + G[state1][state2]*3
         return c + G[state1][state2]
 
     def value(self, state):

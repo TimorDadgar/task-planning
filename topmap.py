@@ -11,14 +11,17 @@ class top_map:
     def __init__(self):
         self.nodes = []
         self.sensors = []
+        self.inshadow = set()
         
-    def generate_random(self, n_nodes, minxy, maxxy, n_sensors):
+    def generate_random(self, n_nodes, minxy, maxxy, n_sensors, shad_pos, shad_dir):
         self.nodes = []
         self.sensors = []
         for i in range(n_sensors):
             self.sensors.append(randint(0, n_nodes-1))
         for i in range(n_nodes):
             self.nodes.append( (uniform(minxy, maxxy), uniform(minxy,maxxy) ))
+            if (self.nodes[i][0] - shad_pos[0])*shad_dir[0] + (self.nodes[i][1] - shad_pos[1])*shad_dir[1] > 0:
+                self.inshadow.add(i)
             #print(self.nodes[i])
 
     """"
@@ -65,8 +68,8 @@ max_xy = 256   # maximum range of x,y
 # given_nodes = [(random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)) for i in range(10)]
 T = top_map()
 
-T.generate_random(20, min_xy, max_xy, 4)   # (number of nodes, min_xy, max_xy, number of sensors)
-
+T.generate_random(20, min_xy, max_xy, 4, (180, 128), (1, -1))   # (number of nodes, min_xy, max_xy, number of sensors)
+print(T.inshadow)
 given_nodes = T.nodes
 
 E = get_edges_for_graph(given_nodes)
