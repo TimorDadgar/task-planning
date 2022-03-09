@@ -47,7 +47,7 @@ def calc_vertex(tri, vor):
         if x > x_max_min[0] or x < x_max_min[1] or y > y_max_min[0] or y < y_max_min[1]:
             continue
         else:
-            vertex_n_l.append(tri.vertices[i])   # append neighboring nodes to vertex
+            vertex_n_l.append(tri.vertices[i])   # append vertices with accepted x,y values to vertex_n_l
     return vertex_n_l     # return local list
 
 
@@ -113,6 +113,7 @@ def visualise_voronoi(given_nodes, edge_list):
 
     # draw voronoi diagram with given nodes
     voronoi_plot_2d(vor)
+    plt.figure()
     # draw graph with nodes and edges inside the voronoi diagram
     # nx.draw(G, nx.get_node_attributes(G, 'pos'), font_color='w', edge_color='b', with_labels=True, font_weight='bold')
 
