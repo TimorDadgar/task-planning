@@ -1,1 +1,1 @@
-Instal pakages: numpy, networkx, matplotlib
+Instal pakages: numpy, networkx, matplotlib, paho-mqtt
