@@ -2,6 +2,12 @@ import paho.mqtt.client as mqtt
 import time
 import os
 
+username = ""
+password = ""
+ip = ""
+port = ""
+
+
 def on_connect(client, userdata, flags, rc):
     print("on_connect callback: " + str(rc))
 
@@ -14,7 +20,7 @@ def on_publish(client, obj, mid):
 def on_subscribe(client, obj, mid, granted_qos):
     print("Subscribed: " + str(mid) + " " + str(granted_qos))
 
-mqttc = mqtt.Client() 
+mqttc = mqtt.Client()
 
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
@@ -23,16 +29,16 @@ mqttc.on_subscribe = on_subscribe
 
 topic = 'test'
 
-mqttc.will_set("dodsruna", "broker is gone")
+mqttc.will_set("dodsruna", "task_planning client is gone")
 
-#mqttc.username_pw_set("admin", "hej123")
-mqttc.connect("92.34.73.176", 1234)
+mqttc.tlc_set()
+mqttc.username_pw_set(username, password)
+mqttc.connect(ip, port)
 
 mqttc.loop_start()
 
-while True:
-    mqttc.publish(topic, "hope this is working")
-    time.sleep(5)
+mqttc.publish(topic, "hope this is working")
+mqttc.subscribe(topic, 0)
 
-mqttc.loop_stop()
+mqttc.loop_forever()
 
