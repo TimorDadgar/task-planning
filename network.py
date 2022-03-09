@@ -49,7 +49,7 @@ class Network:
         self.client.on_subscribe = on_subscribe
 
         self.client.username_pw_set(username, password)
-        self.client.tlc_set()
+        self.client.tls_set()
         self.client.connect(ip, port)
         for i in topics:
             self.client.subscribe(i, QOS_level)
@@ -57,7 +57,11 @@ class Network:
 
         self.client.will_set("dodsruna", "task_planning client is gone")
 
-        self.client.loop_forever()
+        self.client.loop_start()
+
+    def __del__(self):
+        self.client.loop_stop()
+        self.client.disconnect()
 
 
 
