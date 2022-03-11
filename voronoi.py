@@ -48,7 +48,7 @@ def calc_vertex(tri, vor):
         if x > x_max_min[0] or x < x_max_min[1] or y > y_max_min[0] or y < y_max_min[1]:
             continue
         else:
-            vertex_n_l.append(tri.vertices[i])   # append neighboring nodes to vertex
+            vertex_n_l.append(tri.vertices[i])   # append vertices with accepted x,y values to vertex_n_l
     return vertex_n_l     # return local list
 
 
