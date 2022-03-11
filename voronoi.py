@@ -37,7 +37,8 @@ def add_nodes(graph, n_l):
 
 def calc_vertex(tri, vor):
     vertex_n_l = []   # create local list we will return
-    for i in range(len(tri.vertices)):
+    print(len(tri.vertices), len(vor.vertices))
+    for i in range(len(vor.vertices)):
         x = vor.vertices[i][0]      # assign vertices x value to local var x to get more readable code
         y = vor.vertices[i][1]      # assign vertices y value to local var y to get more readable code
 
@@ -113,6 +114,7 @@ def visualise_voronoi(given_nodes, edge_list):
 
     # draw voronoi diagram with given nodes
     voronoi_plot_2d(vor)
+    plt.figure()
     # draw graph with nodes and edges inside the voronoi diagram
     # nx.draw(G, nx.get_node_attributes(G, 'pos'), font_color='w', edge_color='b', with_labels=True, font_weight='bold')
 

@@ -4,7 +4,7 @@ from algorithm import *
 import copy
 
 shadDrainRate = 0.3
-sunChargeRate = 0.0
+sunChargeRate = 0
 
 
 class State():
@@ -37,7 +37,7 @@ def path_length(l1, l2):
 
 def find_sun(pos):
     outdist = float('inf')
-    batteryOut = 0
+    batteryOut = float('inf')
     sunnode = None
     if pos in T.inshadow:
         for N in range(len(T.nodes)):
@@ -47,6 +47,8 @@ def find_sun(pos):
                     sunnode = N
                     outdist = pl
         batteryOut = outdist * shadDrainRate
+    else:
+        batteryOut = 0
     return batteryOut, sunnode
 
 
@@ -87,8 +89,8 @@ def move_robot(state, l1, l2):
     for i in range(1, len(path)):
         plan.append(('goto', path[i].state))
         goto(state, path[i].state)
-        if path[i - 1].state in T.inshadow or path[i].state in T.inshadow:
-            state.battery -= distn(path[i - 1].state, path[i].state) * shadDrainRate
+        if path[i].state in T.inshadow or path[i - 1].state in T.inshadow:
+            state.battery -= distn(path[i - 1].state, path[i].state)*shadDrainRate
         else:
             state.battery = min(state.battery + distn(path[i - 1].state, path[i].state) * sunChargeRate, 100)
     # make sure to never let it be impossible to get out of shadow
@@ -103,21 +105,25 @@ def move_robot(state, l1, l2):
         if l1 in T.inshadow:
             restore_state(state, ols)
             su = find_sun(l1)
+            print(state.battery, su)
             if state.battery < su[0]:
-                raise Exception("Impossible to get out of shadow at " + str(l1) + " - insufficient battery")
+                raise Exception("Impossible to get out of shadow at " + str(l1) + " - insufficient battery, need " + str(su[0]) + " has " + str(state.battery))
+            print(state.battery)
             plan = move_robot(state, l1, su[1])
+            if abs(state.battery - (ols.battery - su[0])) > 0.001:
+                raise Exception("Cost out of " + str(l1) + " was miscalculated: " + str(state.battery) + " vs " + str(ols.battery - su[0]))
             plan.extend(move_robot(state, su[1], l2))
         elif olb - state.battery + batteryOut <= 100:  # is it possible to before charge enough to get in and out?
-            plan.insert(0, ('charge', olb - state.battery + batteryOut))
+            plan.insert(0, ('charge', olb - state.battery + batteryOut+1))
             # print("charge to", str(olb - state.battery + batteryOut))
-            state.battery = batteryOut
+            state.battery = batteryOut+1
             # print("end up with", str(batteryOut))
         else:
-            if batteryOut < 50: # if the shortest distance from goal to sun is short enough
+            if batteryOut < 50:  # if the shortest distance from goal to sun is short enough
                 restore_state(state, ols)
                 plan = move_robot(state, l1, sunnode)
-                plan.append(('charge', batteryOut*2))
-                state.battery = batteryOut*2
+                plan.append(('charge', batteryOut * 2+1))
+                state.battery = batteryOut * 2+1
                 plan.extend(move_robot(state, sunnode, l2))
             else:
                 raise Exception("Going to  " + str(l2) + " from " + str(l1) + " would risk running out of battery")
@@ -171,12 +177,6 @@ def test_of_applying_sensors(l):
         drop(state1)
 
 
-# a function for conveniently calculating distance between nodes (lines would otherwise be very long)
-def distn(i, j):
-    N = T.nodes
-    return sqrt((N[i][0] - N[j][0]) ** 2 + (N[i][1] - N[j][1]) ** 2)
-
-
 # execute the set of tasks to do
 def dotodo(state, todo):
     ols = copy.deepcopy(state)  # for restoring state
@@ -187,6 +187,7 @@ def dotodo(state, todo):
         plans.append(p)
         state = copy.deepcopy(ols)
     plan = []
+    print(plans)
     # for as long as there are tasks to add to the ultimate single plan
     while len(plans):
         mind = float(inf)  # minimal distance
@@ -209,6 +210,7 @@ def dotodo(state, todo):
         plan.append(plans[mini].pop(0))  # add the instruction(s) that require the least distance to get something done
         if plan[-1][0] == 'charge':
             plan.append(plans[mini].pop(0))
+            state.battery = plan[-1][1]
         while plan[-1][0] == 'goto':  # all the movement up until accomplishing something
             K.add_edge(state.pos['r'], plan[-1][1], color='black', weight=3)
             state.pos['r'] = plan[-1][1]
@@ -228,11 +230,14 @@ def dotodo(state, todo):
                     break
         # after moving to a new location, new paths are needed to each other location
         for i in range(len(plans)):
+            ols = copy.deepcopy(state)
             pos = state.pos['r']  # eventually the destination
-            while plans[i][0][0] == 'goto' or plans[i][0][0] == 'charge':
+            if plans[i][0][0] == 'charge':
+                state.battery = plans[i][0][1]
+                plans[i].pop(0)
+            while plans[i][0][0] == 'goto':
                 op = plans[i].pop(0)
                 pos = op[1]
-            ols = copy.deepcopy(state)
             mov = move_robot(state, state.pos['r'], pos)
             mov.reverse()  # inserting each movement at index zero, reversing this order makes it easy
             for m in mov:
@@ -250,10 +255,15 @@ for i in range(len(T.sensors)):
     state1.pos['s' + str(i)] = T.sensors[i]
 print(state1.pos)
 # each sensor's position to be dropped
-goal1 = randint(0, len(T.sensors) - 1)
-goal2 = randint(0, len(T.sensors) - 1)
-goal3 = randint(0, len(T.sensors) - 1)
-goal4 = randint(0, len(T.sensors) - 1)
+goal1, goal2, goal3, goal4 = -1, -1, -1, -1
+while goal1 not in G:
+    goal1 = randint(0, len(T.sensors) - 1)
+while goal2 not in G:
+    goal2 = randint(0, len(T.sensors) - 1)
+while goal3 not in G:
+    goal3 = randint(0, len(T.sensors) - 1)
+while goal4 not in G:
+    goal4 = randint(0, len(T.sensors) - 1)
 todo = [lambda state: drop_item(state, goal1, 0), lambda state: drop_item(state, goal2, 1),
         lambda state: drop_item(state, goal3, 2), lambda state: drop_item(state, goal4, 3)]
 
@@ -273,7 +283,8 @@ except BaseException as e:
 drawall = True
 if drawall:
     for i in range(len(T.nodes)):
-        K.add_edge(i, i)
+        if i in G:
+            K.add_edge(i, i)
 
 col = ['lime' if node in T.sensors else 'yellow' for node in K]  # green for pickup place, yellow for nothing special
 colind = dict()  # color index. This gets a little complicated when not all nodes are drawn
@@ -287,7 +298,7 @@ for i in range(len(T.nodes)):
 col[colind[startp]] = 'cyan'  # start position color
 
 for k in state1.pos.keys():
-    if k[0] == 's':
+    if k[0] == 's' and state1.pos[k] in G:
         col[colind[state1.pos[k]]] = 'violet'  # drop position color
 
 if plan is not None:
