@@ -84,8 +84,8 @@ def move_robot(state, l1, l2):
         raise Exception("Cannot reach node " + str(l2) + " from " + str(l1))
     path = path.path()  # the path leading up to final node
     plan = []  # for appending command.
-    olb = state.battery
-    ols = copy.deepcopy(state)
+    olb = state.battery  # olb = old battery
+    ols = copy.deepcopy(state)  # ols = old state
     for i in range(1, len(path)):
         plan.append(('goto', path[i].state))
         goto(state, path[i].state)
@@ -98,8 +98,7 @@ def move_robot(state, l1, l2):
     su = find_sun(state.pos['r'])
     batteryOut = su[0]
     sunnode = su[1]
-
-    print(olb, state.battery, batteryOut)
+    print(state.battery, batteryOut)
     print(path)
     if state.battery < batteryOut:
         if l1 in T.inshadow:
@@ -116,7 +115,7 @@ def move_robot(state, l1, l2):
         elif olb - state.battery + batteryOut <= 100:  # is it possible to before charge enough to get in and out?
             plan.insert(0, ('charge', olb - state.battery + batteryOut+1))
             # print("charge to", str(olb - state.battery + batteryOut))
-            state.battery = batteryOut+1
+            state.battery = batteryOut + 1
             # print("end up with", str(batteryOut))
         else:
             if batteryOut < 50:  # if the shortest distance from goal to sun is short enough
@@ -209,8 +208,8 @@ def dotodo(state, todo):
 
         plan.append(plans[mini].pop(0))  # add the instruction(s) that require the least distance to get something done
         if plan[-1][0] == 'charge':
-            plan.append(plans[mini].pop(0))
             state.battery = plan[-1][1]
+            plan.append(plans[mini].pop(0))
         while plan[-1][0] == 'goto':  # all the movement up until accomplishing something
             K.add_edge(state.pos['r'], plan[-1][1], color='black', weight=3)
             state.pos['r'] = plan[-1][1]

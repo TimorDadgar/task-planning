@@ -1,7 +1,7 @@
 import paho.mqtt.client as mqtt
 
-username = ""
-password = ""
+username = "task-planning"
+password = "regalia risk sulfite corporal"
 ip = "tharsis.oru.se"
 port = 8883
 topics = ["motion_planning", "mission_control", "perception", "simulation"]
@@ -19,6 +19,7 @@ def on_message(client, obj, msg):
             print("inside motion_planning topic handler")
             # create new plan
         else:
+            print("not inside motion_planning topic handler")
             # send next part of plan
     elif msg.topic == "mission_control":
         print("inside mission_control topic handler")
@@ -63,5 +64,4 @@ class Network:
         self.client.loop_stop()
         self.client.disconnect()
 
-
-
+net = Network()

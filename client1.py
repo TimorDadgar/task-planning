@@ -2,8 +2,8 @@ import paho.mqtt.client as mqtt
 import time
 import os
 
-username = ""
-password = ""
+username = "task-planning"
+password = "regalia risk sulfite corporal"
 ip = ""
 port = ""
 
@@ -31,7 +31,7 @@ topic = 'test'
 
 mqttc.will_set("dodsruna", "task_planning client is gone")
 
-mqttc.tlc_set()
+mqttc.tls_set()
 mqttc.username_pw_set(username, password)
 mqttc.connect(ip, port)
 

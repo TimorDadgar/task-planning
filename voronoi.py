@@ -97,7 +97,7 @@ def get_edges_for_graph(given_nodes):  # replace n with given_nodes later
     vertex_node_n = calc_vertex(tri, vor)     # check which vertices that is in the accepted voronoi region
     edge_list = create_graph_edges(vertex_node_n)  # create edge list from vertex node neighbor list
     check_for_empty_node(given_nodes, edge_list)
-    print(edge_list)
+    # print(edge_list)
 
     return edge_list
 

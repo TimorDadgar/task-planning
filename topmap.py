@@ -127,6 +127,7 @@ try:
         obsxind = math.floor(T.nodes[e[0]][0] / 256 * (len(jdata["obstacleMap"]) - 1))
         obsyind = math.floor(T.nodes[e[0]][1] / 256 * (len(jdata["obstacleMap"]) - 1))
         if jdata["obstacleMap"][obsxind][obsyind] != 0:
+            print("Ops, Obstacle detected on the Edge:", e)
             E.remove(e)
         else:
             obsxind = math.floor(T.nodes[e[1]][0] / 256 * (len(jdata["obstacleMap"]) - 1))
