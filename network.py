@@ -36,13 +36,15 @@ def on_message(client, obj, msg):
         set_info_from_perception(data)
 
     elif msg.topic == "simulation/robot/position":
-        print("inside simulation topic handler")
+        print("inside simulation/robot/position topic handler")
         set_info_from_simulation(data)
 
-    elif msg.topic == "simulation/sensor/status/":
-        print("inside simulation topic handler")
+    elif "simulation/sensor/status/" in msg.topic:
+        print("inside simulation/sensor/status topic handler")
         set_info_from_simulation(data)
-        # handle msg.payload
+
+    else:
+        print("can't handle that topic/message")
 
 
 def on_publish(client, obj, mid):
@@ -73,5 +75,4 @@ class Network:
         self.client.loop_forever()
 
     def __del__(self):
-        self.client.loop_stop()
         self.client.disconnect()

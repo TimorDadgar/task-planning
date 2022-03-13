@@ -1,12 +1,12 @@
+import select
 import traceback
 
 from algorithm import *
-from network import Network
+#from network import Network
 import copy
 
 shadDrainRate = 0.3
 sunChargeRate = 0
-
 
 class State():
     def __init__(self):
@@ -21,6 +21,10 @@ class Goal():
         self.sensors_to_be_dropped = []
         self.sensors_to_be_picked_up = []
 
+
+state1 = State()
+goals = Goal()
+#mqtt_client = Network()
 
 def restore_state(onto, refer):
     onto.pos = copy.copy(refer.pos)
@@ -254,10 +258,6 @@ def dotodo(state, todo):
     return plan
 
 
-state1 = State()
-goals = Goal()
-mqtt_client = Network()
-
 def generate_plan():
     state1.pos['r'] = startp = randint(0, len(T.sensors) - 1)
 
@@ -266,13 +266,13 @@ def generate_plan():
     print(state1.pos)
     # each sensor's position to be dropped
     goal1, goal2, goal3, goal4 = -1, -1, -1, -1
-    while goal1 not in G:
+    while goal1 not in T.G:
         goal1 = randint(0, len(T.sensors) - 1)
-    while goal2 not in G:
+    while goal2 not in T.G:
         goal2 = randint(0, len(T.sensors) - 1)
-    while goal3 not in G:
+    while goal3 not in T.G:
         goal3 = randint(0, len(T.sensors) - 1)
-    while goal4 not in G:
+    while goal4 not in T.G:
         goal4 = randint(0, len(T.sensors) - 1)
     todo = [lambda state: drop_item(state, goal1, 0), lambda state: drop_item(state, goal2, 1),
             lambda state: drop_item(state, goal3, 2), lambda state: drop_item(state, goal4, 3)]
@@ -293,7 +293,7 @@ def generate_plan():
     drawall = True
     if drawall:
         for i in range(len(T.nodes)):
-            if i in G:
+            if i in T.G:
                 K.add_edge(i, i)
 
     col = ['lime' if node in T.sensors else 'yellow' for node in K]  # green for pickup place, yellow for nothing special
@@ -308,7 +308,7 @@ def generate_plan():
     col[colind[startp]] = 'cyan'  # start position color
 
     for k in state1.pos.keys():
-        if k[0] == 's' and state1.pos[k] in G:
+        if k[0] == 's' and state1.pos[k] in T.G:
             col[colind[state1.pos[k]]] = 'violet'  # drop position color
 
     if plan is not None:
@@ -351,10 +351,9 @@ def set_info_from_simulation(data):
     state1.pos['r'] = (data['position']['x'], data['position']['y'])
 
 
-
 def set_info_from_perception(data):
     # load obstacle map
-    print(data)
+    T.obstacle_map = data
 
 
 def set_info_from_mission_control(data):
@@ -364,17 +363,20 @@ def set_info_from_mission_control(data):
         if data[i]['command'] == 'goto':
             goals.goal = (data[i]['x'], data[i]['y'])
         elif data[i]['command'] == 'sensor-drop':
-            goals.sensors_to_be_dropped.append(data[i]['id'])
-            mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
+            goals.sensors_to_be_dropped.append({data[i]['id']: (data[i]['x'], data[i]['y'])})
+            # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
         elif data[i]['command'] == 'sensor-pickup':
-            goals.sensors_to_be_picked_up.append(data[i]['id'])
-            mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
+            goals.sensors_to_be_picked_up.append({data[i]['id']: (data[i]['x'], data[i]['y'])})
+
+            # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
         # elif data[i]['command'] == 'capture':
             # goals.camera_locations.append({'id': data[i]['id'], 'coord': (data[i]['x'], data[i]['y'])})
         else:
             print("we cant handle this command")
 
 
+generate_top_map()
+generate_plan()
 # declaration of problem and heuristic
 # problem = #intial state, goal state, actions
 # heuristic = #calculation of the heuristic function

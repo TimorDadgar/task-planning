@@ -1,23 +1,26 @@
 from random import *
-
+from voronoi import *
 from math import *
-
+import json
+import traceback
 # ____for drawing the graph.____
 import networkx as nx
 import matplotlib.pyplot as plt
+
 
 # a function for conveniently calculating distance between nodes (lines would otherwise be very long)
 def distn(i, j):
     N = T.nodes
     return sqrt((N[i][0] - N[j][0]) ** 2 + (N[i][1] - N[j][1]) ** 2)
 
-K = nx.Graph()
-
 class top_map:
     def __init__(self):
         self.nodes = []
         self.sensors = []
+        self.obstacle_map = None
         self.inshadow = set()
+        self.G = None
+        self.E = None
         
     def generate_random(self, n_nodes, minxy, maxxy, n_sensors, shad_pos, shad_dir):
         self.nodes = []
@@ -93,52 +96,51 @@ for i in range(20):
             G[i].pop(j)
             G[j].pop(i)
 """
-from voronoi import *
 
 
 min_xy = 0  # minimum range of x,y
 max_xy = 256   # maximum range of x,y
-
-# given_nodes = [(random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)) for i in range(10)]
+K = nx.Graph()
 T = top_map()
-sensors = []
 
-import json
-with open('MSG.txt') as f:
-    jdata = json.load(f)
 
-#print(obsmap)
+def generate_top_map():
+    # given_nodes = [(random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)) for i in range(10)]
+    sensors = []
 
-for i in range(4):
-    sensors.append((random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)))
-# T.generate_random(20, min_xy, max_xy, 4, (180, 128), (1, -1))   # (number of nodes, min_xy, max_xy, number of sensors)
-T.generate_even(32, (0, 0), (256, 256), sensors, (128, 128), (1, -1))
-print(T.nodes)
-print(T.inshadow)
-print(T.sensors)
-given_nodes = T.nodes
-import traceback
-try:
-    E = get_edges_for_graph(given_nodes)
-    print(E)
-    i = 0
-    while i < len(E):
-        e = E[i]
-        obsxind = math.floor(T.nodes[e[0]][0] / 256 * (len(jdata["obstacleMap"]) - 1))
-        obsyind = math.floor(T.nodes[e[0]][1] / 256 * (len(jdata["obstacleMap"]) - 1))
-        if jdata["obstacleMap"][obsxind][obsyind] != 0:
-            print("Ops, Obstacle detected on the Edge:", e)
-            E.remove(e)
-        else:
-            obsxind = math.floor(T.nodes[e[1]][0] / 256 * (len(jdata["obstacleMap"]) - 1))
-            obsyind = math.floor(T.nodes[e[1]][1] / 256 * (len(jdata["obstacleMap"]) - 1))
-            if jdata["obstacleMap"][obsxind][obsyind] != 0:
-                E.remove(e)
+    with open('MSG.txt') as f:
+        T.obstacle_map = json.load(f)
+
+    for i in range(4):
+        sensors.append((random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)))
+    # T.generate_random(20, min_xy, max_xy, 4, (180, 128), (1, -1))   # (number of nodes, min_xy, max_xy, number of sensors)
+
+    T.generate_even(32, (0, 0), (256, 256), sensors, (128, 128), (1, -1))
+    print(T.nodes)
+    print(T.inshadow)
+    print(T.sensors)
+    given_nodes = T.nodes
+    try:
+        T.E = get_edges_for_graph(given_nodes)
+        print(T.E)
+        i = 0
+        while i < len(T.E):
+            e = T.E[i]
+            obsxind = math.floor(T.nodes[e[0]][0] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+            obsyind = math.floor(T.nodes[e[0]][1] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+            if T.obstacle_map["obstacleMap"][obsxind][obsyind] != 0:
+                print("Ops, Obstacle detected on the Edge:", e)
+                T.E.remove(e)
             else:
-                i += 1
-    G = T.to_graph(E)
-    visualise_voronoi(given_nodes, E)
-except BaseException as e:
-    print(traceback.format_exc())
-    print("Error:", e)
+                obsxind = math.floor(T.nodes[e[1]][0] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+                obsyind = math.floor(T.nodes[e[1]][1] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+                if T.obstacle_map["obstacleMap"][obsxind][obsyind] != 0:
+                    T.E.remove(e)
+                else:
+                    i += 1
+        T.G = T.to_graph(T.E)
+        visualise_voronoi(given_nodes, T.E)
+    except BaseException as e:
+        print(traceback.format_exc())
+        print("Error:", e)
 
