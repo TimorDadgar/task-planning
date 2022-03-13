@@ -1,6 +1,7 @@
 import traceback
 
 from algorithm import *
+from network import Network
 import copy
 
 shadDrainRate = 0.3
@@ -12,6 +13,13 @@ class State():
         self.pos = {}
         self.carrying = set()
         self.battery = 30
+
+
+class Goal():
+    def __init__(self):
+        self.goal = ()
+        self.sensors_to_be_dropped = []
+        self.sensors_to_be_picked_up = []
 
 
 def restore_state(onto, refer):
@@ -247,89 +255,125 @@ def dotodo(state, todo):
 
 
 state1 = State()
+goals = Goal()
+mqtt_client = Network()
 
-state1.pos['r'] = startp = randint(0, len(T.sensors) - 1)
+def generate_plan():
+    state1.pos['r'] = startp = randint(0, len(T.sensors) - 1)
 
-for i in range(len(T.sensors)):
-    state1.pos['s' + str(i)] = T.sensors[i]
-print(state1.pos)
-# each sensor's position to be dropped
-goal1, goal2, goal3, goal4 = -1, -1, -1, -1
-while goal1 not in G:
-    goal1 = randint(0, len(T.sensors) - 1)
-while goal2 not in G:
-    goal2 = randint(0, len(T.sensors) - 1)
-while goal3 not in G:
-    goal3 = randint(0, len(T.sensors) - 1)
-while goal4 not in G:
-    goal4 = randint(0, len(T.sensors) - 1)
-todo = [lambda state: drop_item(state, goal1, 0), lambda state: drop_item(state, goal2, 1),
-        lambda state: drop_item(state, goal3, 2), lambda state: drop_item(state, goal4, 3)]
+    for i in range(len(T.sensors)):
+        state1.pos['s' + str(i)] = T.sensors[i]
+    print(state1.pos)
+    # each sensor's position to be dropped
+    goal1, goal2, goal3, goal4 = -1, -1, -1, -1
+    while goal1 not in G:
+        goal1 = randint(0, len(T.sensors) - 1)
+    while goal2 not in G:
+        goal2 = randint(0, len(T.sensors) - 1)
+    while goal3 not in G:
+        goal3 = randint(0, len(T.sensors) - 1)
+    while goal4 not in G:
+        goal4 = randint(0, len(T.sensors) - 1)
+    todo = [lambda state: drop_item(state, goal1, 0), lambda state: drop_item(state, goal2, 1),
+            lambda state: drop_item(state, goal3, 2), lambda state: drop_item(state, goal4, 3)]
 
-# the position in graph to draw nodes
-# i= index, T.nodes coordinate on each node
-pos = {i: T.nodes[i] for i in range(len(T.nodes))}
+    # the position in graph to draw nodes
+    # i= index, T.nodes coordinate on each node
+    pos = {i: T.nodes[i] for i in range(len(T.nodes))}
 
-try:
-    plan = dotodo(state1, todo)
-    print(plan)
-except BaseException as e:
-    print(traceback.format_exc())
-    print("Error:", e)
-    plan = None
+    try:
+        plan = dotodo(state1, todo)
+        print(plan)
+    except BaseException as e:
+        print(traceback.format_exc())
+        print("Error:", e)
+        plan = None
 
-# if the nodes not part of the plan are to be drawn
-drawall = True
-if drawall:
+    # if the nodes not part of the plan are to be drawn
+    drawall = True
+    if drawall:
+        for i in range(len(T.nodes)):
+            if i in G:
+                K.add_edge(i, i)
+
+    col = ['lime' if node in T.sensors else 'yellow' for node in K]  # green for pickup place, yellow for nothing special
+    colind = dict()  # color index. This gets a little complicated when not all nodes are drawn
     for i in range(len(T.nodes)):
-        if i in G:
-            K.add_edge(i, i)
+        j = 0
+        for node in K:
+            if node == i:
+                colind[i] = j
+            j += 1
 
-col = ['lime' if node in T.sensors else 'yellow' for node in K]  # green for pickup place, yellow for nothing special
-colind = dict()  # color index. This gets a little complicated when not all nodes are drawn
-for i in range(len(T.nodes)):
-    j = 0
-    for node in K:
-        if node == i:
-            colind[i] = j
-        j += 1
+    col[colind[startp]] = 'cyan'  # start position color
 
-col[colind[startp]] = 'cyan'  # start position color
+    for k in state1.pos.keys():
+        if k[0] == 's' and state1.pos[k] in G:
+            col[colind[state1.pos[k]]] = 'violet'  # drop position color
 
-for k in state1.pos.keys():
-    if k[0] == 's' and state1.pos[k] in G:
-        col[colind[state1.pos[k]]] = 'violet'  # drop position color
+    if plan is not None:
+        col[colind[plan[-2][1]]] = 'red'  # end position color
+    from matplotlib import colors
 
-if plan is not None:
-    col[colind[plan[-2][1]]] = 'red'  # end position color
-from matplotlib import colors
-
-for k in T.inshadow:
-    if k in colind:
-        if colors.is_color_like("dark" + col[colind[k]]):
-            col[colind[k]] = "dark" + col[colind[k]]
-        else:
-            if col[colind[k]] == "lime":
-                col[colind[k]] = "darkgreen"
+    for k in T.inshadow:
+        if k in colind:
+            if colors.is_color_like("dark" + col[colind[k]]):
+                col[colind[k]] = "dark" + col[colind[k]]
             else:
-                col[colind[k]] = "darkgoldenrod"
-        '''
-        c = colors.to_rgb(col[colind[k]])
-        c2 = colors.to_rgb('gray')
-        c = (c[0]/2 + c2[0]/2,
-             c[1] / 2 + c2[1] / 2,
-             c[2] / 2 + c2[2] / 2)
-        col[colind[k]] = c
-        '''
+                if col[colind[k]] == "lime":
+                    col[colind[k]] = "darkgreen"
+                else:
+                    col[colind[k]] = "darkgoldenrod"
+            '''
+            c = colors.to_rgb(col[colind[k]])
+            c2 = colors.to_rgb('gray')
+            c = (c[0]/2 + c2[0]/2,
+                 c[1] / 2 + c2[1] / 2,
+                 c[2] / 2 + c2[2] / 2)
+            col[colind[k]] = c
+            '''
 
-# drawing in random layout
-if plan is not None:
-    nx.draw(K, pos=pos, with_labels=True, node_color=col, edge_color=nx.get_edge_attributes(K, 'color').values(),
-            width=list(nx.get_edge_attributes(K, 'weight').values()))
-else:
-    nx.draw(K, pos=pos, with_labels=True, node_color=col)
-plt.show()
-plt.savefig("filename3.png")
+    # drawing in random layout
+    if plan is not None:
+        nx.draw(K, pos=pos, with_labels=True, node_color=col, edge_color=nx.get_edge_attributes(K, 'color').values(),
+                width=list(nx.get_edge_attributes(K, 'weight').values()))
+    else:
+        nx.draw(K, pos=pos, with_labels=True, node_color=col)
+    plt.show()
+    plt.savefig("filename3.png")
+
+
+def set_info_from_simulation(data):
+    # insert intitial state of robot
+    # insert sensors
+    # insert battery info
+    # insert shadow vector
+    state1.pos['r'] = (data['position']['x'], data['position']['y'])
+
+
+
+def set_info_from_perception(data):
+    # load obstacle map
+    print(data)
+
+
+def set_info_from_mission_control(data):
+    # insert goal state
+    # insert sensors (drop/pickup)
+    for i in range(len(data)):
+        if data[i]['command'] == 'goto':
+            goals.goal = (data[i]['x'], data[i]['y'])
+        elif data[i]['command'] == 'sensor-drop':
+            goals.sensors_to_be_dropped.append(data[i]['id'])
+            mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
+        elif data[i]['command'] == 'sensor-pickup':
+            goals.sensors_to_be_picked_up.append(data[i]['id'])
+            mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
+        # elif data[i]['command'] == 'capture':
+            # goals.camera_locations.append({'id': data[i]['id'], 'coord': (data[i]['x'], data[i]['y'])})
+        else:
+            print("we cant handle this command")
+
 
 # declaration of problem and heuristic
 # problem = #intial state, goal state, actions
