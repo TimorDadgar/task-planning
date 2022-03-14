@@ -8,23 +8,33 @@ import copy
 shadDrainRate = 0.3
 sunChargeRate = 0
 
-class State():
+
+class State:
     def __init__(self):
         self.pos = {}
         self.carrying = set()
         self.battery = 30
 
 
-class Goal():
+class Goal:
     def __init__(self):
         self.goal = ()
         self.sensors_to_be_dropped = []
         self.sensors_to_be_picked_up = []
 
 
+class Plan:
+    def __init__(self):
+        self.plan = None
+        self.current_objective = None
+        self.current_plan_list_pos = 0
+
+
 state1 = State()
 goals = Goal()
+final_plan = Plan()
 #mqtt_client = Network()
+
 
 def restore_state(onto, refer):
     onto.pos = copy.copy(refer.pos)
@@ -282,12 +292,12 @@ def generate_plan():
     pos = {i: T.nodes[i] for i in range(len(T.nodes))}
 
     try:
-        plan = dotodo(state1, todo)
-        print(plan)
+        final_plan.plan = dotodo(state1, todo)
+        print(final_plan.plan)
     except BaseException as e:
         print(traceback.format_exc())
         print("Error:", e)
-        plan = None
+        final_plan.plan = None
 
     # if the nodes not part of the plan are to be drawn
     drawall = True
@@ -311,8 +321,8 @@ def generate_plan():
         if k[0] == 's' and state1.pos[k] in T.G:
             col[colind[state1.pos[k]]] = 'violet'  # drop position color
 
-    if plan is not None:
-        col[colind[plan[-2][1]]] = 'red'  # end position color
+    if final_plan.plan is not None:
+        col[colind[final_plan.plan[-2][1]]] = 'red'  # end position color
     from matplotlib import colors
 
     for k in T.inshadow:
@@ -334,7 +344,7 @@ def generate_plan():
             '''
 
     # drawing in random layout
-    if plan is not None:
+    if final_plan.plan is not None:
         nx.draw(K, pos=pos, with_labels=True, node_color=col, edge_color=nx.get_edge_attributes(K, 'color').values(),
                 width=list(nx.get_edge_attributes(K, 'weight').values()))
     else:
@@ -373,6 +383,15 @@ def set_info_from_mission_control(data):
             # goals.camera_locations.append({'id': data[i]['id'], 'coord': (data[i]['x'], data[i]['y'])})
         else:
             print("we cant handle this command")
+
+
+def send_final_plan_1_by_1():
+    current_plan_id = final_plan.current_plan_list_pos  # get plan's current id (pos in plan list)
+    command = final_plan.plan[current_plan_id][0]   # get command to execute
+    arg = T.nodes[final_plan.plan[current_plan_id][1]]  # get coordinates from node n
+    plan_out = {"id": current_plan_id, "command": command, "args": arg}     # make message in correct format
+    data_out = json.dumps(plan_out)     # create json message
+    mqtt_client.client.publish("tp/instruction", payload=data_out)  # publish current plan step
 
 
 generate_top_map()

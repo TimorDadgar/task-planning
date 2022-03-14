@@ -6,7 +6,7 @@ username = "task-planning"
 password = "regalia risk sulfite corporal"
 ip = "tharsis.oru.se"
 port = 8883
-topics = ["motion_planning", "mission_control", "perception", "simulation"]
+topics = ["tp/status", "mission_control", "perception", "simulation/robot/position"]
 QOS_level = 0
 
 
@@ -16,15 +16,16 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, obj, msg):
     print("msg from topic " + msg.topic + ": " + str(msg.payload))
-    m_decode = str(msg.payload.decode("utf-8", "ignore"))
-    data = json.loads(m_decode)
+    m_decode = str(msg.payload.decode("utf-8", "ignore"))   # decode json message
+    data = json.loads(m_decode)     # insert json message to data variable
 
-    if msg.topic == "motion_planning":
-        if str(msg.payload) == "fail":
-            print("inside motion_planning topic handler")
-
+    if msg.topic == "tp/status":
+        print("inside status topic handler")
+        if data[1]['status'] == "ok":
+            final_plan.current_plan_list_pos += 1   # if plan step had success, add 1 to list pos in plan object
         else:
-            print("inside else statement in motion_planning topic handler")
+            print("plan failed")
+            # call function which handles fail case
 
     elif msg.topic == "mission_control":
         print("inside mission_control topic handler")
