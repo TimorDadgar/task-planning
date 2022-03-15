@@ -23,13 +23,13 @@ def on_message(client, obj, msg):
         print("inside status topic handler")
         if data[1]['status'] == "ok":
             final_plan.current_plan_list_pos += 1   # if plan step had success, add 1 to list pos in plan object
+            send_final_plan_1_by_1()
         else:
-            print("plan failed")
+            print("plan failed, we cant handle that right now")
             # call function which handles fail case
 
     elif msg.topic == "mission_control":
         print("inside mission_control topic handler")
-        print("printing received data", data)
         set_info_from_mission_control(data)
 
     elif msg.topic == "perception":
@@ -40,9 +40,9 @@ def on_message(client, obj, msg):
         print("inside simulation/robot/position topic handler")
         set_info_from_simulation(data)
 
-    elif "simulation/sensor/status/" in msg.topic:
-        print("inside simulation/sensor/status topic handler")
-        set_info_from_simulation(data)
+    #elif "simulation/sensor/status/" in msg.topic:
+        #print("inside simulation/sensor/status topic handler")
+        #set_info_from_simulation(data)
 
     else:
         print("can't handle that topic/message")

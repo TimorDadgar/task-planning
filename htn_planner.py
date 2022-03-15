@@ -268,7 +268,7 @@ def dotodo(state, todo):
     return plan
 
 
-def generate_plan():
+def generate_test_plan():
     state1.pos['r'] = startp = randint(0, len(T.sensors) - 1)
 
     for i in range(len(T.sensors)):
@@ -353,6 +353,11 @@ def generate_plan():
     plt.savefig("filename3.png")
 
 
+def generate_plan():
+    # implement how to create plan from mqtt
+    print("gsdfsd")
+
+
 def set_info_from_simulation(data):
     # insert intitial state of robot
     # insert sensors
@@ -374,6 +379,7 @@ def set_info_from_mission_control(data):
             goals.goal = (data[i]['x'], data[i]['y'])
         elif data[i]['command'] == 'sensor-drop':
             goals.sensors_to_be_dropped.append({data[i]['id']: (data[i]['x'], data[i]['y'])})
+            state1.carrying
             # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
         elif data[i]['command'] == 'sensor-pickup':
             goals.sensors_to_be_picked_up.append({data[i]['id']: (data[i]['x'], data[i]['y'])})
@@ -394,8 +400,8 @@ def send_final_plan_1_by_1():
     mqtt_client.client.publish("tp/instruction", payload=data_out)  # publish current plan step
 
 
-generate_top_map()
-generate_plan()
+generate_test_top_map()
+generate_test_plan()
 # declaration of problem and heuristic
 # problem = #intial state, goal state, actions
 # heuristic = #calculation of the heuristic function

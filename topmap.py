@@ -105,6 +105,11 @@ T = top_map()
 
 
 def generate_top_map():
+    # implement how to create top_map from mqtt data
+    print("fdf")
+
+
+def generate_test_top_map():
     # given_nodes = [(random.uniform(min_xy, max_xy), random.uniform(min_xy, max_xy)) for i in range(10)]
     sensors = []
 
