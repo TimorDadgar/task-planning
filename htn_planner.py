@@ -355,7 +355,11 @@ def generate_test_plan():
 
 def generate_plan():
     # implement how to create plan from mqtt
-    print("gsdfsd")
+    for i in range(len(T.sensors)):
+        state1.pos['s' + str(i)] = T.sensors[i]
+    print(state1.pos)
+    
+    # ????
 
 
 def set_info_from_simulation(data):
@@ -379,7 +383,6 @@ def set_info_from_mission_control(data):
             goals.goal = (data[i]['x'], data[i]['y'])
         elif data[i]['command'] == 'sensor-drop':
             goals.sensors_to_be_dropped.append({data[i]['id']: (data[i]['x'], data[i]['y'])})
-            state1.carrying
             # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
         elif data[i]['command'] == 'sensor-pickup':
             goals.sensors_to_be_picked_up.append({data[i]['id']: (data[i]['x'], data[i]['y'])})

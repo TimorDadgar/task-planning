@@ -1,6 +1,7 @@
 from random import *
 from voronoi import *
 from math import *
+from htn_planner import goals
 import json
 import traceback
 # ____for drawing the graph.____
@@ -106,7 +107,34 @@ T = top_map()
 
 def generate_top_map():
     # implement how to create top_map from mqtt data
-    print("fdf")
+    list_of_coord_of_sensors = []
+    for i in goals.sensors_to_be_picked_up:
+        list_of_coord_of_sensors.append(i[0])
+    print("list of sensors to be added to top_map: ", list_of_coord_of_sensors)
+    T.generate_even(32, (0, 0), (256, 256), list_of_coord_of_sensors, (128, 128), (1, -1))
+    given_nodes = T.nodes
+    try:
+        T.E = get_edges_for_graph(given_nodes)
+        print(T.E)
+        i = 0
+        while i < len(T.E):
+            e = T.E[i]
+            obsxind = math.floor(T.nodes[e[0]][0] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+            obsyind = math.floor(T.nodes[e[0]][1] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+            if T.obstacle_map["obstacleMap"][obsxind][obsyind] != 0:
+                print("Ops, Obstacle detected on the Edge:", e)
+                T.E.remove(e)
+            else:
+                obsxind = math.floor(T.nodes[e[1]][0] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+                obsyind = math.floor(T.nodes[e[1]][1] / 256 * (len(T.obstacle_map["obstacleMap"]) - 1))
+                if T.obstacle_map["obstacleMap"][obsxind][obsyind] != 0:
+                    T.E.remove(e)
+                else:
+                    i += 1
+        T.G = T.to_graph(T.E)
+    except BaseException as e:
+        print(traceback.format_exc())
+        print("Error:", e)
 
 
 def generate_test_top_map():
