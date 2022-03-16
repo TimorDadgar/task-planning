@@ -6,7 +6,7 @@ username = "task-planning"
 password = "regalia risk sulfite corporal"
 ip = "tharsis.oru.se"
 port = 8883
-topics = ["tp/status", "mission_control", "perception", "simulation/robot/position"]
+topics = ["tp/status", "mcpoints", "perception/obsmap", "simulation/robot/position"]
 QOS_level = 0
 
 
@@ -38,8 +38,21 @@ def on_message(client, obj, msg):
             print("cant handle null mission")
         else:
             set_info_from_mission_control(data)
-            data_out = send_final_plan_1_by_1()
-            client.publish("tp/instruction", payload=data_out)
+
+            # run functions for creating the top_map and plan
+            # generate_top_map()
+            # generate_plan()
+
+            mock_data = True    # set mock_data to True if we should send mock data, otherwise set it to False
+            data_out = send_final_plan_1_by_1(mock_data)
+
+            # ------------------- REMOVE WHEN DOING REAL TEST -----------------------------
+            client.publish("test_channel", payload=data_out)    # publish data to test_channel topic
+            # -----------------------------------------------------------------------------
+
+            # ------------------- UNCOMMENT WHEN DOING REAL TEST --------------------------
+            # client.publish("tp/instruction", payload=data_out)     # publish data to real topic
+            # -----------------------------------------------------------------------------
 
     elif msg.topic == "perception/obsmap":
         print("inside perception topic handler")
@@ -48,10 +61,6 @@ def on_message(client, obj, msg):
     elif msg.topic == "simulation/robot/position":
         print("inside simulation/robot/position topic handler")
         set_info_from_simulation(data)
-
-    #elif "simulation/sensor/status/" in msg.topic:
-        #print("inside simulation/sensor/status topic handler")
-        #set_info_from_simulation(data)
 
     else:
         print("can't handle that topic/message")

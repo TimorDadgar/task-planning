@@ -363,7 +363,7 @@ def generate_plan():
 
 def set_info_from_simulation(data):
     # insert intitial state of robot
-    # insert sensors
+    # insert sensors???
     # insert battery info
     # insert shadow vector
     state1.pos['r'] = (data['position']['x'], data['position']['y'])
@@ -371,46 +371,59 @@ def set_info_from_simulation(data):
 
 
 def set_info_from_perception(data):
-    # load obstacle map
+    # insert obstacle map
     T.obstacle_map = data
 
 
 def set_info_from_mission_control(data):
     # insert goal state
+    # insert goto objectives
     # insert sensors (drop/pickup)
     for i in data:
         print(data[i])
         if data[i][0]['command'] == 'goal-state':
+            print("adding goal state....")
             goals.goal = (data[i][0]['x'], data[i][0]['y'])
             print(goals.goal)
         elif data[i][0]['command'] == 'goto':
+            print("adding goto objectives....")
             goals.goto_objectives = (data[i][0]['x'], data[i][0]['y'])
             print(goals.goto_objectives)
         elif data[i][0]['command'] == 'sensor-drop':
+            print("adding sensors to be dropped....")
             goals.sensors_to_be_dropped.append({data[i][0]['id']: (data[i][0]['x'], data[i][0]['y'])})
-            # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
+            print(goals.sensors_to_be_dropped)
         elif data[i][0]['command'] == 'sensor-pickup':
+            print("adding sensors to be picked up....")
             goals.sensors_to_be_picked_up.append({data[i][0]['id']: (data[i][0]['x'], data[i][0]['y'])})
-
-            # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
-        # elif data[i]['command'] == 'capture':
-            # goals.camera_locations.append({'id': data[i]['id'], 'coord': (data[i]['x'], data[i]['y'])})
+            print(goals.sensors_to_be_picked_up)
         else:
-            print("we cant handle this command")
+            print("we cant handle this command at the moment")
 
 
-def send_final_plan_1_by_1():
-    current_plan_id = final_plan.current_plan_list_pos  # get plan's current id (pos in plan list)
-    command = final_plan.plan[current_plan_id][0]   # get command to execute
-    arg = T.nodes[final_plan.plan[current_plan_id][1]]  # get coordinates from node n
-    plan_out = {"id": current_plan_id, "command": command, "x": arg[0], "y": arg[1]}     # make message in correct format
-    data_out = json.dumps(plan_out)     # create json message
-    print(data_out)
-    return data_out
+# if mock_data is True we send mock data to motion planning
+# if mock_data is False we send real data to motion planning
+def send_final_plan_1_by_1(mock_data):
+    if mock_data is True:
+        plan_out = {"id": 0, "command": "goto", "x": 40, "y": 25}   # create message format
+        data_out = json.dumps(plan_out)     # create json message
+        return data_out
+    else:
+        current_plan_id = final_plan.current_plan_list_pos  # get plan's current id (pos in plan list)
+        print("current plan id in list:", current_plan_id)
+        if final_plan.current_plan_list_pos < len(final_plan.plan):
+            command = final_plan.plan[current_plan_id][0]   # get command to execute
+            arg = T.nodes[final_plan.plan[current_plan_id][1]]  # get coordinates from node n
+            plan_out = {"id": current_plan_id, "command": command, "x": arg[0], "y": arg[1]}     # create message format
+            data_out = json.dumps(plan_out)     # create json message
+            print(data_out)
+            return data_out
+        else:
+            print("plan is done, which means the plan should have succeeded")
 
 
-generate_test_top_map()
-generate_test_plan()
+#generate_test_top_map()
+#generate_test_plan()
 # declaration of problem and heuristic
 # problem = #intial state, goal state, actions
 # heuristic = #calculation of the heuristic function

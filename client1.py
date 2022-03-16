@@ -33,7 +33,7 @@ mqttc.on_message = on_message
 mqttc.on_publish = on_publish
 mqttc.on_subscribe = on_subscribe
 
-topic = 'mission_control'
+topic = 'mcpoints'
 
 points = [
     {
@@ -74,9 +74,9 @@ mqttc.username_pw_set(username, password)
 mqttc.tls_set()
 mqttc.connect(ip, port)
 mqttc.will_set("dodsruna", "task_planning client is gone")
-mqttc.loop_start()
+mqttc.subscribe("test_channel")
 mqttc.publish(topic, payload=data_out)
-mqttc.loop_stop()
+mqttc.loop_forever()
 
 
 
