@@ -35,40 +35,41 @@ mqttc.on_subscribe = on_subscribe
 
 topic = 'mcpoints'
 
-points = [
-    {
-        "command": "goto",
-        "x": 122,
-        "y": 78,
-        "id": 0
-    },
-    {
-        "command": "sensor-drop",
-        "x": 20,
-        "y": 10,
-        "id": 1
-    },
-    {
-        "command": "sensor-drop",
-        "x": 100,
-        "y": 20,
-        "id": 2
-    },
-    {
-        "command": "sensor-pickup",
-        "x": 150,
-        "y": 120,
-        "id": 3
-    },
-    {
-        "command": "sensor-pickup",
-        "x": 50,
-        "y": 25,
-        "id": 4
-    }
-]
+message = {"points": [
+        {
+            "command": "goto",
+            "x": 122,
+            "y": 78,
+            "id": 0
+        },
+        {
+            "command": "sensor-drop",
+            "x": 20,
+            "y": 10,
+            "id": 1
+        },
+        {
+            "command": "sensor-drop",
+            "x": 100,
+            "y": 20,
+            "id": 2
+        },
+        {
+            "command": "sensor-pickup",
+            "x": 150,
+            "y": 120,
+            "id": 3
+        },
+        {
+            "command": "sensor-pickup",
+            "x": 50,
+            "y": 25,
+            "id": 4
+        }
+    ]
+}
 
-data_out = json.dumps(points)     # encode object to JSON
+data_out = json.dumps(message)     # encode object to JSON
 
 mqttc.username_pw_set(username, password)
 mqttc.tls_set()

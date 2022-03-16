@@ -352,6 +352,7 @@ def generate_test_plan():
     plt.savefig("filename3.png")
 
 
+# ------------------- WE HAVE TO FIX THIS FUNCTION--------------------------
 def generate_plan():
     # implement how to create plan from mqtt
     for i in range(len(T.sensors)):
@@ -379,23 +380,27 @@ def set_info_from_mission_control(data):
     # insert goal state
     # insert goto objectives
     # insert sensors (drop/pickup)
+
     for i in data:
         print(data[i])
-        if data[i][0]['command'] == 'goal-state':
+        command = data[i][0]['command']     # current command in data list
+        coordinates = (data[i][0]['x'], data[i][0]['y'])    # current coordinates in data list
+        c_id = data[i][0]['id']     # id of current item in data list
+        if command == 'goal-state':
             print("adding goal state....")
-            goals.goal = (data[i][0]['x'], data[i][0]['y'])
+            goals.goal = coordinates
             print(goals.goal)
-        elif data[i][0]['command'] == 'goto':
+        elif command == 'goto':
             print("adding goto objectives....")
-            goals.goto_objectives = (data[i][0]['x'], data[i][0]['y'])
+            goals.goto_objectives = coordinates
             print(goals.goto_objectives)
-        elif data[i][0]['command'] == 'sensor-drop':
+        elif command == 'sensor-drop':
             print("adding sensors to be dropped....")
-            goals.sensors_to_be_dropped.append({data[i][0]['id']: (data[i][0]['x'], data[i][0]['y'])})
+            goals.sensors_to_be_dropped.append({c_id: coordinates})     # make dictionary of task
             print(goals.sensors_to_be_dropped)
-        elif data[i][0]['command'] == 'sensor-pickup':
+        elif command == 'sensor-pickup':
             print("adding sensors to be picked up....")
-            goals.sensors_to_be_picked_up.append({data[i][0]['id']: (data[i][0]['x'], data[i][0]['y'])})
+            goals.sensors_to_be_picked_up.append({c_id: coordinates})   # # make dictionary of task
             print(goals.sensors_to_be_picked_up)
         else:
             print("we cant handle this command at the moment")
@@ -420,6 +425,7 @@ def send_final_plan_1_by_1(mock_data):
             return data_out
         else:
             print("plan is done, which means the plan should have succeeded")
+            return None
 
 
 #generate_test_top_map()

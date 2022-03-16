@@ -104,6 +104,7 @@ K = nx.Graph()
 T = top_map()
 
 
+# ------------------- WE HAVE TO FIX THIS FUNCTION--------------------------
 def generate_top_map():
     # implement how to create top_map from mqtt data
 

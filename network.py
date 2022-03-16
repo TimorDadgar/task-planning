@@ -23,7 +23,7 @@ def on_message(client, obj, msg):
         print("inside status topic handler")
         if data[0]['status'] == "success":
             final_plan.current_plan_list_pos += 1   # if plan step had success, add 1 to list pos in plan object
-            data_out = send_final_plan_1_by_1()
+            data_out = send_final_plan_1_by_1(False)    # change False to True if mock_data is going to be sent
             if data_out is not None:
                 client.publish("tp/instruction", payload=data_out)
             else:
@@ -39,7 +39,7 @@ def on_message(client, obj, msg):
         else:
             set_info_from_mission_control(data)
 
-            # run functions for creating the top_map and plan
+            # run functions for creating the top_map and plan when we have fixed them
             # generate_top_map()
             # generate_plan()
 
