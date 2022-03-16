@@ -1,7 +1,6 @@
 from random import *
 from voronoi import *
 from math import *
-from htn_planner import goals
 import json
 import traceback
 # ____for drawing the graph.____
@@ -107,6 +106,8 @@ T = top_map()
 
 def generate_top_map():
     # implement how to create top_map from mqtt data
+
+    # ------------------ bug here right now -------------------------
     list_of_coord_of_sensors = []
     for i in goals.sensors_to_be_picked_up:
         list_of_coord_of_sensors.append(i[0])

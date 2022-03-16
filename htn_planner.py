@@ -2,7 +2,6 @@ import select
 import traceback
 
 from algorithm import *
-#from network import Network
 import copy
 
 shadDrainRate = 0.3
@@ -19,6 +18,7 @@ class State:
 class Goal:
     def __init__(self):
         self.goal = ()
+        self.goto_objectives = []
         self.sensors_to_be_dropped = []
         self.sensors_to_be_picked_up = []
 
@@ -33,7 +33,6 @@ class Plan:
 state1 = State()
 goals = Goal()
 final_plan = Plan()
-#mqtt_client = Network()
 
 
 def restore_state(onto, refer):
@@ -358,7 +357,7 @@ def generate_plan():
     for i in range(len(T.sensors)):
         state1.pos['s' + str(i)] = T.sensors[i]
     print(state1.pos)
-    
+
     # ????
 
 
@@ -368,6 +367,7 @@ def set_info_from_simulation(data):
     # insert battery info
     # insert shadow vector
     state1.pos['r'] = (data['position']['x'], data['position']['y'])
+    print(state1.pos)
 
 
 def set_info_from_perception(data):
@@ -378,14 +378,19 @@ def set_info_from_perception(data):
 def set_info_from_mission_control(data):
     # insert goal state
     # insert sensors (drop/pickup)
-    for i in range(len(data)):
-        if data[i]['command'] == 'goto':
-            goals.goal = (data[i]['x'], data[i]['y'])
-        elif data[i]['command'] == 'sensor-drop':
-            goals.sensors_to_be_dropped.append({data[i]['id']: (data[i]['x'], data[i]['y'])})
+    for i in data:
+        print(data[i])
+        if data[i][0]['command'] == 'goal-state':
+            goals.goal = (data[i][0]['x'], data[i][0]['y'])
+            print(goals.goal)
+        elif data[i][0]['command'] == 'goto':
+            goals.goto_objectives = (data[i][0]['x'], data[i][0]['y'])
+            print(goals.goto_objectives)
+        elif data[i][0]['command'] == 'sensor-drop':
+            goals.sensors_to_be_dropped.append({data[i][0]['id']: (data[i][0]['x'], data[i][0]['y'])})
             # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
-        elif data[i]['command'] == 'sensor-pickup':
-            goals.sensors_to_be_picked_up.append({data[i]['id']: (data[i]['x'], data[i]['y'])})
+        elif data[i][0]['command'] == 'sensor-pickup':
+            goals.sensors_to_be_picked_up.append({data[i][0]['id']: (data[i][0]['x'], data[i][0]['y'])})
 
             # mqtt_client.client.subscribe("simulation/sensor/status/" + data[i]['id'])
         # elif data[i]['command'] == 'capture':
@@ -398,9 +403,10 @@ def send_final_plan_1_by_1():
     current_plan_id = final_plan.current_plan_list_pos  # get plan's current id (pos in plan list)
     command = final_plan.plan[current_plan_id][0]   # get command to execute
     arg = T.nodes[final_plan.plan[current_plan_id][1]]  # get coordinates from node n
-    plan_out = {"id": current_plan_id, "command": command, "args": arg}     # make message in correct format
+    plan_out = {"id": current_plan_id, "command": command, "x": arg[0], "y": arg[1]}     # make message in correct format
     data_out = json.dumps(plan_out)     # create json message
-    mqtt_client.client.publish("tp/instruction", payload=data_out)  # publish current plan step
+    print(data_out)
+    return data_out
 
 
 generate_test_top_map()

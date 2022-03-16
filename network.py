@@ -21,18 +21,27 @@ def on_message(client, obj, msg):
 
     if msg.topic == "tp/status":
         print("inside status topic handler")
-        if data[1]['status'] == "ok":
+        if data[0]['status'] == "success":
             final_plan.current_plan_list_pos += 1   # if plan step had success, add 1 to list pos in plan object
-            send_final_plan_1_by_1()
+            data_out = send_final_plan_1_by_1()
+            if data_out is not None:
+                client.publish("tp/instruction", payload=data_out)
+            else:
+                print("end of plan")
         else:
             print("plan failed, we cant handle that right now")
             # call function which handles fail case
 
-    elif msg.topic == "mission_control":
+    elif msg.topic == "mcpoints":
         print("inside mission_control topic handler")
-        set_info_from_mission_control(data)
+        if data[0] is None:
+            print("cant handle null mission")
+        else:
+            set_info_from_mission_control(data)
+            data_out = send_final_plan_1_by_1()
+            client.publish("tp/instruction", payload=data_out)
 
-    elif msg.topic == "perception":
+    elif msg.topic == "perception/obsmap":
         print("inside perception topic handler")
         set_info_from_perception(data)
 
@@ -77,3 +86,5 @@ class Network:
 
     def __del__(self):
         self.client.disconnect()
+
+mqttc = Network()
