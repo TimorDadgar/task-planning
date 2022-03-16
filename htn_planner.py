@@ -381,11 +381,12 @@ def set_info_from_mission_control(data):
     # insert goto objectives
     # insert sensors (drop/pickup)
 
-    for i in data:
-        print(data[i])
-        command = data[i][0]['command']     # current command in data list
-        coordinates = (data[i][0]['x'], data[i][0]['y'])    # current coordinates in data list
-        c_id = data[i][0]['id']     # id of current item in data list
+    print(data)
+    for i in range(len(data["points"])):
+
+        command = data["points"][i]['command']  # current command in data list
+        coordinates = (data["points"][i]['x'], data["points"][i]['y'])  # current coordinates in data list
+        c_id = data["points"][i]['id']  # id of current item in data list
         if command == 'goal-state':
             print("adding goal state....")
             goals.goal = coordinates
@@ -393,15 +394,15 @@ def set_info_from_mission_control(data):
         elif command == 'goto':
             print("adding goto objectives....")
             goals.goto_objectives = coordinates
-            print(goals.goto_objectives)
+            print("list of goto objectives:", goals.goto_objectives)
         elif command == 'sensor-drop':
-            print("adding sensors to be dropped....")
-            goals.sensors_to_be_dropped.append({c_id: coordinates})     # make dictionary of task
-            print(goals.sensors_to_be_dropped)
+            print("adding sensor to be dropped....")
+            goals.sensors_to_be_dropped.append({c_id: coordinates})  # make dictionary of task
+            print("list of added sensors to be dropped:", goals.sensors_to_be_dropped)
         elif command == 'sensor-pickup':
-            print("adding sensors to be picked up....")
-            goals.sensors_to_be_picked_up.append({c_id: coordinates})   # # make dictionary of task
-            print(goals.sensors_to_be_picked_up)
+            print("adding sensor to be picked up....")
+            goals.sensors_to_be_picked_up.append({c_id: coordinates})  # # make dictionary of task
+            print("list of added sensors to be picked up:", goals.sensors_to_be_picked_up)
         else:
             print("we cant handle this command at the moment")
 
