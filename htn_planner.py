@@ -393,7 +393,7 @@ def set_info_from_mission_control(data):
             print(goals.goal)
         elif command == 'goto':
             print("adding goto objectives....")
-            goals.goto_objectives = coordinates
+            goals.goto_objectives.append(coordinates)
             print("list of goto objectives:", goals.goto_objectives)
         elif command == 'sensor-drop':
             print("adding sensor to be dropped....")
@@ -411,7 +411,9 @@ def set_info_from_mission_control(data):
 # if mock_data is False we send real data to motion planning
 def send_final_plan_1_by_1(mock_data):
     if mock_data is True:
-        plan_out = {"id": 0, "command": "goto", "x": 40, "y": 25}   # create message format
+        x = goals.goto_objectives[0][0]
+        y = goals.goto_objectives[0][1]
+        plan_out = {"id": 0, "command": "goto", "x": x, "y": y}   # create message format
         data_out = json.dumps(plan_out)     # create json message
         return data_out
     else:

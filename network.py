@@ -23,8 +23,8 @@ def on_message(client, obj, msg):
         print("inside status topic handler")
         if data[0]['status'] == "success":
             final_plan.current_plan_list_pos += 1   # if plan step had success, add 1 to list pos in plan object
-            data_out = send_final_plan_1_by_1(False)    # change False to True if mock_data is going to be sent
-            if data_out is not None:
+            data_out = send_final_plan_1_by_1(True)    # change False to True if mock_data is going to be sent
+            if data_out is not None:    # if data_out is None, plan is done
                 client.publish("tp/instruction", payload=data_out)
             else:
                 print("end of plan")
@@ -34,7 +34,7 @@ def on_message(client, obj, msg):
 
     elif msg.topic == "mcpoints":
         print("inside mission_control topic handler")
-        if data[0] is None:
+        if data["points"] is None:
             print("cant handle null mission")
         else:
             set_info_from_mission_control(data)
@@ -47,7 +47,7 @@ def on_message(client, obj, msg):
             data_out = send_final_plan_1_by_1(mock_data)
 
             # ------------------- REMOVE WHEN DOING REAL TEST -----------------------------
-            client.publish("test_channel", payload=data_out)    # publish data to test_channel topic
+            client.publish("tp/instruction", payload=data_out)    # publish data to test_channel topic
             # -----------------------------------------------------------------------------
 
             # ------------------- UNCOMMENT WHEN DOING REAL TEST --------------------------
