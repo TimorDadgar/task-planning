@@ -447,7 +447,7 @@ def set_info_from_mission_control(data):
 
 # if mock_data is True we send mock data to motion planning
 # if mock_data is False we send real data to motion planning
-def send_final_plan_1_by_1(mock_data=False):
+def send_final_plan_1_by_1(mock_data):
     if mock_data is True:
         x = goals.goto_objectives[0][0]
         y = goals.goto_objectives[0][1]
