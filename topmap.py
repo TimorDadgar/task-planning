@@ -36,7 +36,7 @@ class top_map:
 
     def generate_even(self, dist, minxy, maxxy, sensors, shad_pos, shad_dir):
         self.nodes = []
-        self.sensors = []
+        self.sensors = {}
         self.inshadow = set()
         x = minxy[0]
         while x <= maxxy[0]:
@@ -47,18 +47,20 @@ class top_map:
                 self.nodes.append((x, y))
                 y += dist
             x += dist
-        for s in sensors:
-            mindis = float('inf')
-            minind = -1
-            i = 0
-            for n in self.nodes:
-                dis = (s[0]-n[0])**2 + (s[1]-n[1])**2
-                if dis < mindis:
-                    mindis = dis
-                    minind = i
-                i += 1
-            self.sensors.append(minind)
+        #for s in sensors:
+        #    self.sensors.append(self.closest_node(s))
 
+    def closest_node(self, coord):
+        mindis = float('inf')
+        minind = -1
+        i = 0
+        for n in self.nodes:
+            dis = (coord[0] - n[0]) ** 2 + (coord[1] - n[1]) ** 2
+            if dis < mindis:
+                mindis = dis
+                minind = i
+            i += 1
+        return minind
 
     """"
     def to_graph(self):

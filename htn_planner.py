@@ -1,4 +1,5 @@
 import select
+import time
 import traceback
 
 from algorithm import *
@@ -111,7 +112,7 @@ def move_robot(state, l1, l2):
         plan.append(('goto', path[i].state))
         goto(state, path[i].state)
         if path[i].state in T.inshadow or path[i - 1].state in T.inshadow:
-            state.battery -= distn(path[i - 1].state, path[i].state)*shadDrainRate
+            state.battery -= distn(path[i - 1].state, path[i].state) * shadDrainRate
         else:
             state.battery = min(state.battery + distn(path[i - 1].state, path[i].state) * sunChargeRate, 100)
     # make sure to never let it be impossible to get out of shadow
@@ -127,14 +128,17 @@ def move_robot(state, l1, l2):
             su = find_sun(l1)
             print(state.battery, su)
             if state.battery < su[0]:
-                raise Exception("Impossible to get out of shadow at " + str(l1) + " - insufficient battery, need " + str(su[0]) + " has " + str(state.battery))
+                raise Exception(
+                    "Impossible to get out of shadow at " + str(l1) + " - insufficient battery, need " + str(
+                        su[0]) + " has " + str(state.battery))
             print(state.battery)
             plan = move_robot(state, l1, su[1])
             if abs(state.battery - (ols.battery - su[0])) > 0.001:
-                raise Exception("Cost out of " + str(l1) + " was miscalculated: " + str(state.battery) + " vs " + str(ols.battery - su[0]))
+                raise Exception("Cost out of " + str(l1) + " was miscalculated: " + str(state.battery) + " vs " + str(
+                    ols.battery - su[0]))
             plan.extend(move_robot(state, su[1], l2))
         elif olb - state.battery + batteryOut <= 100:  # is it possible to before charge enough to get in and out?
-            plan.insert(0, ('charge', olb - state.battery + batteryOut+1))
+            plan.insert(0, ('charge', olb - state.battery + batteryOut + 1))
             # print("charge to", str(olb - state.battery + batteryOut))
             state.battery = batteryOut + 1
             # print("end up with", str(batteryOut))
@@ -142,8 +146,8 @@ def move_robot(state, l1, l2):
             if batteryOut < 50:  # if the shortest distance from goal to sun is short enough
                 restore_state(state, ols)
                 plan = move_robot(state, l1, sunnode)
-                plan.append(('charge', batteryOut * 2+1))
-                state.battery = batteryOut * 2+1
+                plan.append(('charge', batteryOut * 2 + 1))
+                state.battery = batteryOut * 2 + 1
                 plan.extend(move_robot(state, sunnode, l2))
             else:
                 raise Exception("Going to  " + str(l2) + " from " + str(l1) + " would risk running out of battery")
@@ -161,6 +165,7 @@ def pickup_item(state, loc, i):
 
 
 def drop_item(state, loc, i):
+    print((state, loc, i))
     if i in state.carrying:
         s = []
         if state.pos['r'] != loc:
@@ -286,10 +291,6 @@ def generate_test_plan():
     todo = [lambda state: drop_item(state, goal1, 0), lambda state: drop_item(state, goal2, 1),
             lambda state: drop_item(state, goal3, 2), lambda state: drop_item(state, goal4, 3)]
 
-    # the position in graph to draw nodes
-    # i= index, T.nodes coordinate on each node
-    pos = {i: T.nodes[i] for i in range(len(T.nodes))}
-
     try:
         final_plan.plan = dotodo(state1, todo)
         print(final_plan.plan)
@@ -298,14 +299,21 @@ def generate_test_plan():
         print("Error:", e)
         final_plan.plan = None
 
+    draw_plan(startp)
+
+
+def draw_plan(startp, drawall=True):
+    # the position in graph to draw nodes
+    # i= index, T.nodes coordinate on each node
+    pos = {i: T.nodes[i] for i in range(len(T.nodes))}
+
     # if the nodes not part of the plan are to be drawn
-    drawall = True
     if drawall:
         for i in range(len(T.nodes)):
             if i in T.G:
                 K.add_edge(i, i)
 
-    col = ['lime' if node in T.sensors else 'yellow' for node in K]  # green for pickup place, yellow for nothing special
+    col = ['lime' if node in T.sensors else 'yellow' for node in K]  # green for pickup pos, yellow for nothing special
     colind = dict()  # color index. This gets a little complicated when not all nodes are drawn
     for i in range(len(T.nodes)):
         j = 0
@@ -357,6 +365,26 @@ def generate_plan():
     # implement how to create plan from mqtt
     for i in range(len(T.sensors)):
         state1.pos['s' + str(i)] = T.sensors[i]
+    todo = []
+    for i in range(len(goals.sensors_to_be_dropped)):
+        def generate_lambda(loc, sen):
+            return lambda state: drop_item(state, loc, sen)
+        loc = goals.sensors_to_be_dropped[i][1]
+        sen = goals.sensors_to_be_dropped[i][0]
+        todo.append(generate_lambda(loc, sen))
+        print(todo[i])
+        print((loc, sen))
+    print(todo)
+    try:
+        startp = state1.pos['r']
+        final_plan.plan = dotodo(state1, todo)
+        print(final_plan.plan)
+        draw_plan(startp)
+    except BaseException as e:
+        print(traceback.format_exc())
+        print("Error:", e)
+        final_plan.plan = None
+
     print(state1.pos)
 
     # ????
@@ -367,8 +395,8 @@ def set_info_from_simulation(data):
     # insert sensors???
     # insert battery info
     # insert shadow vector
-    state1.pos['r'] = (data['position']['x'], data['position']['y'])
-    print(state1.pos)
+    state1.pos['r'] = T.closest_node((data['position']['x'], data['position']['y']))
+    # print(state1.pos)
 
 
 def set_info_from_perception(data):
@@ -382,6 +410,7 @@ def set_info_from_mission_control(data):
     # insert sensors (drop/pickup)
 
     print(data)
+    state1.pos['r'] = 1
     for i in range(len(data["points"])):
 
         command = data["points"][i]['command']  # current command in data list
@@ -397,11 +426,15 @@ def set_info_from_mission_control(data):
             print("list of goto objectives:", goals.goto_objectives)
         elif command == 'sensor-drop':
             print("adding sensor to be dropped....")
-            goals.sensors_to_be_dropped.append({c_id: coordinates})  # make dictionary of task
+            # goals.sensors_to_be_dropped.append({c_id: coordinates})  # make dictionary of task
+            dropnode = T.closest_node((data["points"][i]["x"], data["points"][i]["x"]))
+            goals.sensors_to_be_dropped.append((data["points"][i]["sensor"], dropnode))
             print("list of added sensors to be dropped:", goals.sensors_to_be_dropped)
         elif command == 'sensor-pickup':
             print("adding sensor to be picked up....")
-            goals.sensors_to_be_picked_up.append({c_id: coordinates})  # # make dictionary of task
+            # goals.sensors_to_be_picked_up.append({c_id: coordinates})  # # make dictionary of task
+            T.sensors[data["points"][i]["sensor"]] = T.closest_node((data["points"][i]["x"], data["points"][i]["x"]))
+            goals.sensors_to_be_picked_up.append(data["points"][i]["sensor"])
             print("list of added sensors to be picked up:", goals.sensors_to_be_picked_up)
         else:
             print("we cant handle this command at the moment")
@@ -409,30 +442,42 @@ def set_info_from_mission_control(data):
 
 # if mock_data is True we send mock data to motion planning
 # if mock_data is False we send real data to motion planning
-def send_final_plan_1_by_1(mock_data):
+def send_final_plan_1_by_1(mock_data=False):
     if mock_data is True:
         x = goals.goto_objectives[0][0]
         y = goals.goto_objectives[0][1]
-        plan_out = {"id": 0, "command": "goto", "x": x, "y": y}   # create message format
-        data_out = json.dumps(plan_out)     # create json message
+        plan_out = {"id": 0, "command": "goto", "x": x, "y": y}  # create message format
+        data_out = json.dumps(plan_out)  # create json message
         return data_out
     else:
         current_plan_id = final_plan.current_plan_list_pos  # get plan's current id (pos in plan list)
         print("current plan id in list:", current_plan_id)
         if final_plan.current_plan_list_pos < len(final_plan.plan):
-            command = final_plan.plan[current_plan_id][0]   # get command to execute
-            arg = T.nodes[final_plan.plan[current_plan_id][1]]  # get coordinates from node n
-            plan_out = {"id": current_plan_id, "command": command, "x": arg[0], "y": arg[1]}     # create message format
-            data_out = json.dumps(plan_out)     # create json message
+            command = final_plan.plan[current_plan_id][0]  # get command to execute
+            if command == "goto":
+                arg = T.nodes[final_plan.plan[current_plan_id][1]]  # get coordinates from node n
+                plan_out = {"id": current_plan_id, "command": command, "x": arg[0],
+                            "y": arg[1]}  # create message format
+            elif command == "pickup" or command == "drop":
+                arg = final_plan.plan[current_plan_id][1]  # get coordinates from node n
+                plan_out = {"id": current_plan_id, "command": command, "sensor": arg}  # create message format
+            elif command == "charge":
+                # arg = final_plan.plan[current_plan_id][1]  # get coordinates from node n
+                # plan_out = {"id": current_plan_id, "command": command, "battery": arg}  # create message format
+                final_plan.current_plan_list_pos += 1
+                print("chorging")
+                time.sleep(6)
+                return send_final_plan_1_by_1()
+
+            data_out = json.dumps(plan_out)  # create json message
             print(data_out)
             return data_out
         else:
             print("plan is done, which means the plan should have succeeded")
             return None
 
-
-#generate_test_top_map()
-#generate_test_plan()
+# generate_test_top_map()
+# generate_test_plan()
 # declaration of problem and heuristic
 # problem = #intial state, goal state, actions
 # heuristic = #calculation of the heuristic function

@@ -45,25 +45,29 @@ message = {"points": [
         {
             "command": "sensor-drop",
             "x": 20,
-            "y": 10,
+            "y": 100,
+            "sensor": 0,
             "id": 1
         },
         {
             "command": "sensor-drop",
             "x": 100,
-            "y": 20,
+            "y": 200,
+            "sensor": 1,
             "id": 2
         },
         {
             "command": "sensor-pickup",
             "x": 150,
             "y": 120,
+            "sensor": 0,
             "id": 3
         },
         {
             "command": "sensor-pickup",
             "x": 50,
             "y": 25,
+            "sensor": 1,
             "id": 4
         }
     ]

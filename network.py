@@ -15,7 +15,8 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_message(client, obj, msg):
-    print("msg from topic " + msg.topic + ": " + str(msg.payload))
+    if msg.topic != "simulation/robot/position":
+        print("msg from topic " + msg.topic + ": " + str(msg.payload))
     m_decode = str(msg.payload.decode("utf-8", "ignore"))   # decode json message
     data = json.loads(m_decode)     # insert json message to data variable
 
@@ -37,17 +38,22 @@ def on_message(client, obj, msg):
         if data["points"] is None:
             print("cant handle null mission")
         else:
+            # temporary, for when MQTT is offline
+            generate_test_top_map()
             set_info_from_mission_control(data)
+
 
             # run functions for creating the top_map and plan when we have fixed them
             # generate_top_map()
-            # generate_plan()
+            print(state1.pos)
+            generate_plan()
+            #generate_test_plan()
 
-            mock_data = True    # set mock_data to True if we should send mock data, otherwise set it to False
+            mock_data = False    # set mock_data to True if we should send mock data, otherwise set it to False
             data_out = send_final_plan_1_by_1(mock_data)
 
             # ------------------- REMOVE WHEN DOING REAL TEST -----------------------------
-            client.publish("tp/instruction", payload=data_out)    # publish data to test_channel topic
+            client.publish("test_channel", payload=data_out)    # publish data to test_channel topic
             # -----------------------------------------------------------------------------
 
             # ------------------- UNCOMMENT WHEN DOING REAL TEST --------------------------
@@ -59,7 +65,7 @@ def on_message(client, obj, msg):
         set_info_from_perception(data)
 
     elif msg.topic == "simulation/robot/position":
-        print("inside simulation/robot/position topic handler")
+        # print("inside simulation/robot/position topic handler")
         set_info_from_simulation(data)
 
     else:
