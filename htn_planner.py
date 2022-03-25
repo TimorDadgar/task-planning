@@ -365,6 +365,7 @@ def generate_plan():
     # implement how to create plan from mqtt
     for i in range(len(T.sensors)):
         state1.pos['s' + str(i)] = T.sensors[i]
+    print(state1.pos)
     todo = []
     for i in range(len(goals.sensors_to_be_dropped)):
         def generate_lambda(loc, sen):
@@ -375,16 +376,20 @@ def generate_plan():
         print(todo[i])
         print((loc, sen))
     print(todo)
+    startp = state1.pos['r']
     try:
-        startp = state1.pos['r']
+
         final_plan.plan = dotodo(state1, todo)
         print(final_plan.plan)
-        draw_plan(startp)
+
     except BaseException as e:
         print(traceback.format_exc())
         print("Error:", e)
         final_plan.plan = None
-
+    try:
+        draw_plan(startp)
+    finally:
+        pass
     print(state1.pos)
 
     # ????
@@ -427,13 +432,13 @@ def set_info_from_mission_control(data):
         elif command == 'sensor-drop':
             print("adding sensor to be dropped....")
             # goals.sensors_to_be_dropped.append({c_id: coordinates})  # make dictionary of task
-            dropnode = T.closest_node((data["points"][i]["x"], data["points"][i]["x"]))
+            dropnode = T.closest_node((data["points"][i]["x"], data["points"][i]["y"]))
             goals.sensors_to_be_dropped.append((data["points"][i]["sensor"], dropnode))
             print("list of added sensors to be dropped:", goals.sensors_to_be_dropped)
         elif command == 'sensor-pickup':
             print("adding sensor to be picked up....")
             # goals.sensors_to_be_picked_up.append({c_id: coordinates})  # # make dictionary of task
-            T.sensors[data["points"][i]["sensor"]] = T.closest_node((data["points"][i]["x"], data["points"][i]["x"]))
+            T.sensors[data["points"][i]["sensor"]] = T.closest_node((data["points"][i]["x"], data["points"][i]["y"]))
             goals.sensors_to_be_picked_up.append(data["points"][i]["sensor"])
             print("list of added sensors to be picked up:", goals.sensors_to_be_picked_up)
         else:
