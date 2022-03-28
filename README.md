@@ -1,1 +1,3 @@
-Instal pakages: numpy, networkx, matplotlib, paho-mqtt
+The contents of this project was done by the students Alex, Alexander, Edris, Lukas and Timor. The project was about creating the different modules that a robot consists off. Our group was tasked with the "brain" of the robot implementing principles learned in the artificial intelligence course we had prior to this project. We all worked on this project together to create an HTN planner that takes input given over an MQTT based communication protocol from the other modules ("mission control", "motion planning", "perception" and "simulation"). Integrating with the other groups there was reason to add a topological map and that is done by using voronoi. 
+
+Install pakages: numpy, networkx, matplotlib, paho-mqtt
